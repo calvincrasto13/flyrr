@@ -966,6 +966,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  quantityControlsInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  quantityButtonInline: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quantityDisplayInline: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  quantityTextInline: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  quantityLabelInline: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
   itemName: {
     fontSize: 16,
     fontWeight: '600',
