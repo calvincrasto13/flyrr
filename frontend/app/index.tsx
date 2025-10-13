@@ -319,44 +319,96 @@ export default function Index() {
     </View>
   );
 
-  const renderSearchResults = () => (
-    <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => setCurrentView('home')}>
-          <Ionicons name="arrow-back" size={28} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Search Results</Text>
-        <View style={{ width: 28 }} />
-      </View>
+  const renderSearchResults = () => {
+    const cheapestPrice = searchResults.length > 0 ? searchResults[0].current_price : 0;
 
-      <ScrollView style={styles.scrollView}>
-        {searchResults.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="search" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No items found</Text>
-          </View>
-        ) : (
-          searchResults.map((item, index) => (
-            <View key={index} style={styles.itemCard}>
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName} numberOfLines={2}>
-                  {item.name}
-                </Text>
-                <Text style={styles.itemStore}>{item.merchant}</Text>
-                <Text style={styles.itemPrice}>${item.current_price.toFixed(2)}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => addToCart(item)}
-              >
-                <Ionicons name="add" size={24} color="#fff" />
-              </TouchableOpacity>
+    return (
+      <View style={styles.container}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => setCurrentView('home')}>
+            <Ionicons name="arrow-back" size={28} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Search Results</Text>
+          <View style={{ width: 28 }} />
+        </View>
+
+        <ScrollView style={styles.scrollView}>
+          {searchResults.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="search" size={64} color="#ccc" />
+              <Text style={styles.emptyText}>No items found</Text>
             </View>
-          ))
-        )}
-      </ScrollView>
-    </View>
-  );
+          ) : (
+            searchResults.map((item, index) => {
+              const priceDifference = item.current_price - cheapestPrice;
+              const isFirst = index === 0;
+
+              return (
+                <View key={index} style={styles.itemCard}>
+                  {isFirst && (
+                    <View style={styles.bestPriceBadge}>
+                      <Ionicons name="trophy" size={16} color="#FFD700" />
+                      <Text style={styles.bestPriceText}>Best Price</Text>
+                    </View>
+                  )}
+                  
+                  <View style={styles.itemRow}>
+                    {item.image_url ? (
+                      <Image
+                        source={{ uri: item.image_url }}
+                        style={styles.productImage}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <View style={styles.productImagePlaceholder}>
+                        <Ionicons name="image-outline" size={40} color="#ccc" />
+                      </View>
+                    )}
+
+                    <View style={styles.itemDetails}>
+                      <Text style={styles.itemName} numberOfLines={2}>
+                        {item.name}
+                      </Text>
+                      
+                      <View style={styles.storeRow}>
+                        {item.merchant_logo ? (
+                          <Image
+                            source={{ uri: item.merchant_logo }}
+                            style={styles.storeLogo}
+                            resizeMode="contain"
+                          />
+                        ) : (
+                          <Ionicons name="storefront" size={16} color="#666" />
+                        )}
+                        <Text style={styles.itemStore}>{item.merchant}</Text>
+                      </View>
+
+                      <View style={styles.priceRow}>
+                        <Text style={styles.itemPrice}>${item.current_price.toFixed(2)}</Text>
+                        {!isFirst && priceDifference > 0 && (
+                          <Text style={styles.priceDifference}>
+                            +${priceDifference.toFixed(2)} vs cheapest
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => addToCart(item)}
+                  >
+                    <Ionicons name="add" size={20} color="#fff" />
+                    <Text style={styles.addButtonText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })
+          )}
+        </ScrollView>
+      </View>
+    );
+  };
 
   const renderCart = () => {
     const cartTotal = shoppingCart.reduce(
