@@ -907,6 +907,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  itemName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  itemStore: {
+    fontSize: 14,
+    color: '#666',
+  },
+  itemPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
   cartItem: {
     backgroundColor: '#fff',
     borderRadius: 12,
