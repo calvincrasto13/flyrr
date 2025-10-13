@@ -360,7 +360,10 @@ export default function Index() {
     return (
       <View style={styles.container}>
         <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => setCurrentView('home')}>
+          <TouchableOpacity onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setCurrentView('home');
+          }}>
             <Ionicons name="arrow-back" size={28} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Search Results</Text>
@@ -377,6 +380,7 @@ export default function Index() {
             searchResults.map((item, index) => {
               const priceDifference = item.current_price - cheapestPrice;
               const isFirst = index === 0;
+              const quantityInCart = getItemQuantityInCart(item.global_id);
 
               return (
                 <View key={index} style={styles.itemCard}>
@@ -429,13 +433,34 @@ export default function Index() {
                     </View>
                   </View>
 
-                  <TouchableOpacity
-                    style={styles.addButton}
-                    onPress={() => addToCart(item)}
-                  >
-                    <Ionicons name="add" size={20} color="#fff" />
-                    <Text style={styles.addButtonText}>Add</Text>
-                  </TouchableOpacity>
+                  {quantityInCart > 0 ? (
+                    <View style={styles.quantityControlsInline}>
+                      <TouchableOpacity
+                        style={styles.quantityButtonInline}
+                        onPress={() => updateItemQuantityInSearch(item, -1)}
+                      >
+                        <Ionicons name="remove" size={20} color="#fff" />
+                      </TouchableOpacity>
+                      <View style={styles.quantityDisplayInline}>
+                        <Text style={styles.quantityTextInline}>{quantityInCart}</Text>
+                        <Text style={styles.quantityLabelInline}>in cart</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.quantityButtonInline}
+                        onPress={() => updateItemQuantityInSearch(item, 1)}
+                      >
+                        <Ionicons name="add" size={20} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.addButton}
+                      onPress={() => addToCart(item)}
+                    >
+                      <Ionicons name="add" size={20} color="#fff" />
+                      <Text style={styles.addButtonText}>Add to Cart</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               );
             })
