@@ -206,6 +206,10 @@ async def get_savings_history():
     """Get savings history"""
     try:
         records = await db.savings_records.find().sort('completed_at', -1).to_list(100)
+        # Convert ObjectId to string for JSON serialization
+        for record in records:
+            if '_id' in record:
+                record['_id'] = str(record['_id'])
         total_savings = sum(record.get('savings', 0) for record in records)
         
         return {
