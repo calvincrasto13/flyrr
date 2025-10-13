@@ -124,6 +124,10 @@ async def get_all_shopping_lists():
     """Get all shopping lists"""
     try:
         lists = await db.shopping_lists.find({'completed': False}).sort('created_at', -1).to_list(100)
+        # Convert ObjectId to string for JSON serialization
+        for lst in lists:
+            if '_id' in lst:
+                lst['_id'] = str(lst['_id'])
         return {'success': True, 'lists': lists}
     except Exception as e:
         logging.error(f"Error getting shopping lists: {str(e)}")
