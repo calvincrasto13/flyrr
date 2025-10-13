@@ -77,15 +77,25 @@ async def search_items(request: SearchRequest):
         processed_items = []
         
         for item in ecom_items:
+            current_price = float(item.get('current_price', 0))
+            
+            # Filter out items with $0 price
+            if current_price <= 0:
+                continue
+            
             processed_items.append({
                 'global_id': item.get('global_id', ''),
                 'name': item.get('name', ''),
                 'merchant': item.get('merchant', ''),
                 'merchant_id': item.get('merchant_id', 0),
-                'current_price': float(item.get('current_price', 0)),
+                'merchant_logo': item.get('merchant_logo', ''),
+                'current_price': current_price,
                 'image_url': item.get('image_url', ''),
                 'description': item.get('description', ''),
             })
+        
+        # Sort by price (cheapest first)
+        processed_items.sort(key=lambda x: x['current_price'])
         
         return {'success': True, 'items': processed_items}
     except Exception as e:
