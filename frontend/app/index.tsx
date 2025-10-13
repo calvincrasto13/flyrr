@@ -128,6 +128,7 @@ export default function Index() {
   };
 
   const addToCart = (item: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const existingItem = shoppingCart.find((i) => i.global_id === item.global_id);
     
     let newCart;
@@ -141,7 +142,38 @@ export default function Index() {
     
     setShoppingCart(newCart);
     saveData('shoppingCart', newCart);
-    Alert.alert('Added!', `${item.name} added to your cart.`);
+  };
+
+  const updateItemQuantityInSearch = (item: any, delta: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const existingItem = shoppingCart.find((i) => i.global_id === item.global_id);
+    
+    if (!existingItem && delta > 0) {
+      addToCart(item);
+      return;
+    }
+    
+    if (existingItem) {
+      const newQuantity = existingItem.quantity + delta;
+      if (newQuantity <= 0) {
+        // Remove item
+        const newCart = shoppingCart.filter((i) => i.global_id !== item.global_id);
+        setShoppingCart(newCart);
+        saveData('shoppingCart', newCart);
+      } else {
+        // Update quantity
+        const newCart = shoppingCart.map((i) =>
+          i.global_id === item.global_id ? { ...i, quantity: newQuantity } : i
+        );
+        setShoppingCart(newCart);
+        saveData('shoppingCart', newCart);
+      }
+    }
+  };
+
+  const getItemQuantityInCart = (globalId: string) => {
+    const item = shoppingCart.find((i) => i.global_id === globalId);
+    return item ? item.quantity : 0;
   };
 
   const removeFromCart = (itemId: string) => {
