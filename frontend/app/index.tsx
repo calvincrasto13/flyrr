@@ -183,6 +183,7 @@ export default function Index() {
   };
 
   const updateQuantity = (itemId: string, delta: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newCart = shoppingCart.map((item) => {
       if (item.id === itemId) {
         const newQuantity = Math.max(1, item.quantity + delta);
