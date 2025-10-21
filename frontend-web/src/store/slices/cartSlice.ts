@@ -1,5 +1,5 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { RootState, CartState, ShoppingItem, StoreComparison, CompareStoresRequest } from '../../types';
+import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import type { RootState, CartState, ShoppingItem, CompareStoresRequest } from '../../types';
 import * as api from '../../services/api';
 
 const initialState: CartState = {
