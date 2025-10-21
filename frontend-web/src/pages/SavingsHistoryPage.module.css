@@ -1,0 +1,131 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.backButton {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  transition: color var(--transition-normal);
+}
+
+.backButton:hover {
+  color: var(--color-primary-dark);
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.spacer {
+  width: 60px;
+}
+
+.totalCard {
+  background-color: var(--color-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  text-align: center;
+}
+
+.totalIcon {
+  font-size: 48px;
+}
+
+.totalLabel {
+  font-size: 18px;
+  color: var(--color-text-light);
+  margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+}
+
+.totalAmount {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.error {
+  text-align: center;
+  padding: var(--spacing-xl);
+  background-color: var(--color-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.error p {
+  color: var(--color-error);
+  margin-bottom: var(--spacing-md);
+}
+
+.emptyState {
+  text-align: center;
+  padding: var(--spacing-xl);
+  background-color: var(--color-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.emptyIcon {
+  font-size: 64px;
+  opacity: 0.5;
+}
+
+.emptyText {
+  font-size: 18px;
+  color: var(--color-text-light);
+  margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+}
+
+.emptySubtext {
+  font-size: 14px;
+  color: var(--color-text-lighter);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.historyList {
+  margin-top: var(--spacing-md);
+}
+
+.historyTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 20px;
+  }
+
+  .backButton {
+    font-size: 14px;
+    padding: var(--spacing-xs);
+  }
+
+  .spacer {
+    width: 40px;
+  }
+
+  .totalAmount {
+    font-size: 28px;
+  }
+}
