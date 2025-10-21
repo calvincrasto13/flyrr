@@ -1,4 +1,4 @@
-import { SavingsRecord } from '../../types';
+import type { SavingsRecord } from '../../types';
 import styles from './SavingsCard.module.css';
 
 interface SavingsCardProps {
