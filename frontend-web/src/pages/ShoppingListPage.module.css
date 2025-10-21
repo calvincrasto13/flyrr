@@ -1,0 +1,202 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.backButton {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  transition: color var(--transition-normal);
+}
+
+.backButton:hover {
+  color: var(--color-primary-dark);
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.spacer {
+  width: 60px;
+}
+
+.storeCard {
+  background-color: var(--color-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  text-align: center;
+}
+
+.storeIcon {
+  font-size: 32px;
+}
+
+.storeName {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: var(--spacing-sm) 0 0 0;
+}
+
+.progressCard {
+  background-color: var(--color-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.progressText {
+  font-size: 14px;
+  color: var(--color-text-light);
+  margin: 0 0 var(--spacing-sm) 0;
+  text-align: center;
+}
+
+.progressBar {
+  height: 8px;
+  background-color: var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: var(--color-primary);
+  transition: width var(--transition-normal);
+}
+
+.itemsList {
+  margin-bottom: var(--spacing-md);
+}
+
+.item {
+  background-color: var(--color-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  cursor: pointer;
+  transition: background-color var(--transition-normal);
+}
+
+.item:hover {
+  background-color: #fafafa;
+}
+
+.itemChecked {
+  background-color: #E8F5E9;
+}
+
+.itemChecked:hover {
+  background-color: #E8F5E9;
+}
+
+.checkbox {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--color-primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkmark {
+  font-size: 20px;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.itemInfo {
+  flex: 1;
+}
+
+.itemName {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 4px 0;
+}
+
+.itemNameChecked {
+  text-decoration: line-through;
+  color: var(--color-text-lighter);
+}
+
+.itemDetails {
+  font-size: 14px;
+  color: var(--color-text-light);
+  margin: 0;
+}
+
+.completeButton {
+  width: 100%;
+  padding: var(--spacing-md);
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  transition: background-color var(--transition-normal), transform var(--transition-fast);
+}
+
+.completeButton:hover:not(:disabled) {
+  background-color: var(--color-primary-dark);
+}
+
+.completeButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.completeButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.buttonIcon {
+  font-size: 24px;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 20px;
+  }
+
+  .backButton {
+    font-size: 14px;
+    padding: var(--spacing-xs);
+  }
+
+  .spacer {
+    width: 40px;
+  }
+}
