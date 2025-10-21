@@ -1,4 +1,4 @@
-import { StoreComparison as StoreComparisonType } from '../../types';
+import type { StoreComparison as StoreComparisonType } from '../../types';
 import styles from './StoreComparison.module.css';
 
 interface StoreComparisonProps {
