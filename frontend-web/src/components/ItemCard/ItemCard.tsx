@@ -1,4 +1,4 @@
-import { ShoppingItem } from '../../types';
+import type { ShoppingItem } from '../../types';
 import { provideFeedback } from '../../utils/feedback';
 import styles from './ItemCard.module.css';
 
