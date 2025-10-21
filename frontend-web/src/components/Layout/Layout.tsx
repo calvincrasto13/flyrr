@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAppSelector } from '../../store/hooks';
-import { selectCartItemCount, selectTotalSavings } from '../../store/slices/cartSlice';
+import { selectCartItemCount } from '../../store/slices/cartSlice';
 import styles from './Layout.module.css';
 
 interface LayoutProps {
@@ -11,7 +11,6 @@ interface LayoutProps {
 export const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const cartItemCount = useAppSelector(selectCartItemCount);
-  const totalSavings = useAppSelector(selectTotalSavings);
 
   const isActive = (path: string) => location.pathname === path;
 
