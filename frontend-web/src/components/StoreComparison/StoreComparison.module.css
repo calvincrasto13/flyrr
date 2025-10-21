@@ -1,0 +1,101 @@
+.container {
+  background-color: var(--color-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.bestStore {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  background-color: #FFF8DC;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.trophy {
+  font-size: 32px;
+}
+
+.bestStoreInfo {
+  flex: 1;
+}
+
+.bestStoreName {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 4px 0;
+}
+
+.bestStorePrice {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.savings {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-align: center;
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.storeList {
+  margin-top: var(--spacing-md);
+}
+
+.storeListTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-light);
+  margin: 0 0 var(--spacing-sm) 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.storeItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background-color: var(--color-background);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-xs);
+}
+
+.storeItemBest {
+  background-color: #E8F5E9;
+  border: 2px solid var(--color-primary);
+}
+
+.storeName {
+  font-size: 14px;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.storePrice {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+@media (max-width: 768px) {
+  .bestStore {
+    flex-direction: column;
+    text-align: center;
+  }
+}
