@@ -1,0 +1,72 @@
+.container {
+  width: 100%;
+}
+
+.label {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--spacing-sm);
+}
+
+.inputContainer {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.input {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  text-transform: uppercase;
+  outline: none;
+  transition: border-color var(--transition-normal);
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+}
+
+.locationButton {
+  padding: 12px 16px;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 24px;
+  cursor: pointer;
+  transition: background-color var(--transition-normal), transform var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+}
+
+.locationButton:hover:not(:disabled) {
+  background-color: var(--color-primary-dark);
+}
+
+.locationButton:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.locationButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error {
+  margin-top: var(--spacing-sm);
+  color: var(--color-error);
+  font-size: 14px;
+}
+
+.info {
+  margin-top: var(--spacing-sm);
+  color: var(--color-primary);
+  font-size: 14px;
+}
