@@ -1,0 +1,38 @@
+.card {
+  background-color: var(--color-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.date {
+  font-size: 14px;
+  color: var(--color-text-light);
+}
+
+.savings {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.store {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 4px 0;
+}
+
+.total {
+  font-size: 14px;
+  color: var(--color-text-light);
+  margin: 0;
+}
