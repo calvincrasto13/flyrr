@@ -1,0 +1,130 @@
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.icon {
+  font-size: 48px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: var(--spacing-sm) 0;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: var(--color-text-light);
+  margin: 0;
+}
+
+.card {
+  background-color: var(--color-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.error {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: #ffebee;
+  color: var(--color-error);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+.statsContainer {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.statCard {
+  background-color: var(--color-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md);
+  text-align: center;
+}
+
+.statIcon {
+  font-size: 32px;
+}
+
+.statNumber {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: var(--spacing-sm) 0 4px 0;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: var(--color-text-light);
+  margin: 0;
+}
+
+.actionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition-normal), transform var(--transition-fast);
+}
+
+.secondaryButton {
+  background-color: white;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+}
+
+.secondaryButton:hover {
+  background-color: var(--color-background);
+}
+
+.secondaryButton:active {
+  transform: scale(0.98);
+}
+
+.buttonIcon {
+  font-size: 20px;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 24px;
+  }
+
+  .statsContainer {
+    gap: var(--spacing-sm);
+  }
+}
