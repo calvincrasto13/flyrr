@@ -1,0 +1,137 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.backButton {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  transition: color var(--transition-normal);
+}
+
+.backButton:hover {
+  color: var(--color-primary-dark);
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.spacer {
+  width: 60px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: var(--spacing-xl);
+  background-color: var(--color-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.emptyIcon {
+  font-size: 64px;
+  opacity: 0.5;
+}
+
+.emptyText {
+  font-size: 18px;
+  color: var(--color-text-light);
+  margin: var(--spacing-md) 0;
+}
+
+.cartItems {
+  margin-bottom: var(--spacing-md);
+}
+
+.totalCard {
+  background-color: var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-md);
+}
+
+.totalLabel {
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+.totalAmount {
+  font-size: 28px;
+  font-weight: 700;
+  color: white;
+}
+
+.actions {
+  margin-top: var(--spacing-md);
+}
+
+.shoppingButton {
+  width: 100%;
+  padding: var(--spacing-md);
+  background-color: var(--color-accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  transition: background-color var(--transition-normal), transform var(--transition-fast);
+}
+
+.shoppingButton:hover {
+  background-color: #f57c00;
+}
+
+.shoppingButton:active {
+  transform: scale(0.98);
+}
+
+.buttonIcon {
+  font-size: 24px;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 20px;
+  }
+
+  .backButton {
+    font-size: 14px;
+    padding: var(--spacing-xs);
+  }
+
+  .spacer {
+    width: 40px;
+  }
+
+  .totalCard {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    text-align: center;
+  }
+}
