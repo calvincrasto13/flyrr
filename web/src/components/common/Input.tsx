@@ -12,6 +12,7 @@ const Input: React.FC<InputProps> = ({
   label,
   required = false,
   maxLength,
+  onKeyPress,
   className = '',
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
