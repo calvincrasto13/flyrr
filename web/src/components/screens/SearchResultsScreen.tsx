@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trophy, Plus, Minus, Store, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Trophy, Plus, Minus, Store, Image as ImageIcon, Search } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { COLORS } from '../../utils/constants';
 import Button from '../common/Button';
