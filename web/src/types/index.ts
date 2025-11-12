@@ -125,6 +125,7 @@ export interface InputProps extends ComponentProps {
   label?: string;
   required?: boolean;
   maxLength?: number;
+  onKeyPress?: (e: React.KeyboardEvent) => void;
 }
 
 export interface CardProps extends ComponentProps {
