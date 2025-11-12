@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException
 from starlette.middleware.cors import CORSMiddleware
-import requests
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
