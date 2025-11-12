@@ -1,0 +1,400 @@
+.savings-history-screen {
+  min-height: 100vh;
+  background-color: var(--color-light);
+}
+
+.savings-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header */
+.savings-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.savings-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--color-black);
+  margin: 0;
+  flex: 1;
+}
+
+.spacer {
+  width: 40px;
+}
+
+/* Total Savings Card */
+.total-savings-card {
+  background: linear-gradient(135deg, var(--color-primary), #45a049);
+  color: white;
+  margin-bottom: 24px;
+  text-align: center;
+  padding: 32px 24px;
+}
+
+.total-savings-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.savings-icon {
+  background: rgba(255, 255, 255, 0.2);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.savings-info {
+  text-align: center;
+}
+
+.total-savings-label {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  opacity: 0.9;
+}
+
+.total-savings-amount {
+  font-size: 36px;
+  font-weight: bold;
+  margin: 0 0 4px 0;
+}
+
+.trips-count {
+  font-size: 14px;
+  margin: 0;
+  opacity: 0.8;
+}
+
+/* Empty Savings */
+.empty-savings {
+  text-align: center;
+  padding: 60px 20px;
+  margin-bottom: 24px;
+}
+
+.empty-icon {
+  margin-bottom: 16px;
+}
+
+.empty-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--color-black);
+  margin: 0 0 8px 0;
+}
+
+.empty-description {
+  font-size: 16px;
+  color: var(--color-gray);
+  margin: 0 0 24px 0;
+  line-height: 1.4;
+}
+
+.start-shopping-button {
+  margin-top: 16px;
+}
+
+/* Savings List */
+.savings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.list-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--color-black);
+  margin: 0 0 16px 0;
+}
+
+/* Savings Record */
+.savings-record {
+  margin-bottom: 0;
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.record-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--color-gray);
+}
+
+.record-savings {
+  text-align: right;
+}
+
+.savings-amount {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--color-primary);
+}
+
+.record-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.record-store {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-black);
+}
+
+.record-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.record-total {
+  font-size: 14px;
+  color: var(--color-gray);
+}
+
+.record-items {
+  font-size: 12px;
+  color: var(--color-light-gray);
+}
+
+/* Price Comparison */
+.price-comparison {
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+}
+
+.comparison-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-gray);
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.store-prices {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.store-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background-color: var(--color-light);
+}
+
+.store-price.best-price {
+  background-color: #e8f5e9;
+  border: 1px solid var(--color-primary);
+}
+
+.store-name {
+  font-size: 12px;
+  color: var(--color-black);
+}
+
+.price {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-black);
+}
+
+.best-badge {
+  font-size: 10px;
+  font-weight: bold;
+  color: var(--color-primary);
+  background-color: #e8f5e9;
+  padding: 2px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Stats Summary */
+.stats-summary {
+  background: white;
+  margin-bottom: 24px;
+}
+
+.stats-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--color-black);
+  margin: 0 0 16px 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.stat-item:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: var(--color-gray);
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--color-black);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .savings-container {
+    padding: 16px;
+  }
+
+  .savings-title {
+    font-size: 20px;
+  }
+
+  .total-savings-card {
+    padding: 24px 16px;
+  }
+
+  .savings-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .savings-icon svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .total-savings-amount {
+    font-size: 28px;
+  }
+
+  .savings-amount {
+    font-size: 16px;
+  }
+
+  .record-store {
+    font-size: 14px;
+  }
+
+  .stats-grid {
+    gap: 12px;
+  }
+
+  .stat-value {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .savings-container {
+    padding: 12px;
+  }
+
+  .savings-header {
+    margin-bottom: 16px;
+  }
+
+  .total-savings-card {
+    padding: 20px 12px;
+  }
+
+  .savings-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .savings-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .total-savings-amount {
+    font-size: 24px;
+  }
+
+  .total-savings-label {
+    font-size: 16px;
+  }
+
+  .savings-record {
+    padding: 12px;
+  }
+
+  .record-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .record-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .record-stats {
+    align-items: flex-start;
+  }
+
+  .store-price {
+    padding: 4px 6px;
+  }
+}
