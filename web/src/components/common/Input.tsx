@@ -38,6 +38,7 @@ const Input: React.FC<InputProps> = ({
         type={type}
         value={value}
         onChange={handleChange}
+        onKeyPress={onKeyPress}
         placeholder={placeholder}
         disabled={disabled}
         maxLength={maxLength}
