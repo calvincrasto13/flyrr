@@ -8,6 +8,7 @@ import { SavingsRecord } from '../../types';
 import Button from '../common/Button';
 import Card from '../common/Card';
 import LoadingSpinner from '../common/LoadingSpinner';
+import NavBar from '../common/NavBar';
 import './SavingsHistoryScreen.css';
 
 const SavingsHistoryScreen: React.FC = () => {
@@ -62,6 +63,8 @@ const SavingsHistoryScreen: React.FC = () => {
   }
 
   return (
+      <>
+    <NavBar />
     <div className="savings-history-screen">
       <div className="savings-container">
         {/* Header */}
@@ -200,6 +203,7 @@ const SavingsHistoryScreen: React.FC = () => {
         )}
       </div>
     </div>
+  </>
   );
 };
 

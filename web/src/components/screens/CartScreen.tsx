@@ -7,6 +7,8 @@ import { COLORS } from '../../utils/constants';
 import Button from '../common/Button';
 import Card from '../common/Card';
 import LoadingSpinner from '../common/LoadingSpinner';
+import NavBar from '../common/NavBar';
+
 import './CartScreen.css';
 
 const CartScreen: React.FC = () => {
@@ -77,6 +79,8 @@ const CartScreen: React.FC = () => {
   }
 
   return (
+      <>
+    <NavBar />
     <div className="cart-screen">
       <div className="cart-container">
         {/* Header */}
@@ -232,6 +236,7 @@ const CartScreen: React.FC = () => {
         )}
       </div>
     </div>
+  </>
   );
 };
 

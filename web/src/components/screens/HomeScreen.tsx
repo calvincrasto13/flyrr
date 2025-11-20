@@ -5,6 +5,7 @@ import { useApp } from '../../contexts/AppContext';
 import { useLocation } from '../../hooks/useLocation';
 import { useGroceryAPI } from '../../hooks/useGroceryAPI';
 import { COLORS } from '../../utils/constants';
+import NavBar from '../common/NavBar';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import Card from '../common/Card';
@@ -76,132 +77,135 @@ const HomeScreen: React.FC = () => {
   };
 
   return (
-    <div className="home-screen">
-      <div className="home-container">
-        {/* Header */}
-        <div className="home-header">
-          <div className="header-icon">
-            <ShoppingCart size={48} color={COLORS.PRIMARY} />
+    <>
+      <NavBar />
+      <div className="home-screen">
+        <div className="home-container">
+          {/* Header */}
+          <div className="home-header">
+            <div className="header-icon">
+              <ShoppingCart size={48} color={COLORS.PRIMARY} />
+            </div>
+            <h1 className="home-title">Smart Grocery Saver</h1>
+            <p className="home-subtitle">Find the best deals around you</p>
           </div>
-          <h1 className="home-title">Smart Grocery Saver</h1>
-          <p className="home-subtitle">Find the best deals around you</p>
-        </div>
 
-        {/* Error Display */}
-        {error && (
-          <div className="error-message">
-            <span>{error}</span>
-          </div>
-        )}
+          {/* Error Display */}
+          {error && (
+            <div className="error-message">
+              <span>{error}</span>
+            </div>
+          )}
 
-        {/* Location Card */}
-        <Card className="location-card">
-          <h2 className="card-title">Your Location</h2>
-          <div className="location-input-container">
+          {/* Location Card */}
+          <Card className="location-card">
+            <h2 className="card-title">Your Location</h2>
+            <div className="location-input-container">
+              <Input
+                value={postalCode}
+                onChange={setPostalCode}
+                placeholder="Enter Postal Code (e.g., L4W3H8)"
+                label="Postal Code"
+                maxLength={10}
+                disabled={locationLoading}
+                className="location-input"
+              />
+              <Button
+                onClick={handleGetCurrentLocation}
+                disabled={locationLoading}
+                loading={locationLoading}
+                variant="secondary"
+                size="medium"
+                className="location-button"
+              >
+                <MapPin size={20} />
+                {locationLoading ? '' : 'Use My Location'}
+              </Button>
+            </div>
+          </Card>
+
+          {/* Search Card */}
+          <Card className="search-card">
+            <h2 className="card-title">Search for Items</h2>
             <Input
-              value={postalCode}
-              onChange={setPostalCode}
-              placeholder="Enter Postal Code (e.g., L4W3H8)"
-              label="Postal Code"
-              maxLength={10}
-              disabled={locationLoading}
-              className="location-input"
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="e.g., milk, bread, eggs"
+              label="What are you looking for?"
+              onKeyPress={handleKeyPress}
+              disabled={isLoading}
             />
             <Button
-              onClick={handleGetCurrentLocation}
-              disabled={locationLoading}
-              loading={locationLoading}
-              variant="secondary"
+              onClick={handleSearch}
+              disabled={isLoading || !searchQuery.trim() || !postalCode.trim()}
+              loading={isLoading}
+              variant="primary"
               size="medium"
-              className="location-button"
+              className="search-button"
             >
-              <MapPin size={20} />
-              {locationLoading ? '' : 'Use My Location'}
+              <Search size={20} />
+              {isLoading ? 'Searching...' : 'Search'}
+            </Button>
+          </Card>
+
+          {/* Stats Container */}
+          <div className="stats-container">
+            <Card className="stat-card">
+              <div className="stat-icon">
+                <ShoppingCart size={32} color={COLORS.PRIMARY} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-number">{cart.length}</div>
+                <div className="stat-label">Items in Cart</div>
+              </div>
+            </Card>
+
+            <Card className="stat-card">
+              <div className="stat-icon">
+                <TrendingUp size={32} color={COLORS.SECONDARY} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-number">${totalSavings.toFixed(2)}</div>
+                <div className="stat-label">Total Saved</div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="action-buttons">
+            <Button
+              onClick={handleNavigateToCart}
+              variant="secondary"
+              size="large"
+              className="action-button"
+            >
+              <ShoppingCart size={20} />
+              View Cart ({cart.length})
+            </Button>
+
+            <Button
+              onClick={handleNavigateToSavings}
+              variant="secondary"
+              size="large"
+              className="action-button"
+            >
+              <TrendingUp size={20} />
+              Savings History
             </Button>
           </div>
-        </Card>
 
-        {/* Search Card */}
-        <Card className="search-card">
-          <h2 className="card-title">Search for Items</h2>
-          <Input
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="e.g., milk, bread, eggs"
-            label="What are you looking for?"
-            onKeyPress={handleKeyPress}
-            disabled={isLoading}
-          />
-          <Button
-            onClick={handleSearch}
-            disabled={isLoading || !searchQuery.trim() || !postalCode.trim()}
-            loading={isLoading}
-            variant="primary"
-            size="medium"
-            className="search-button"
-          >
-            <Search size={20} />
-            {isLoading ? 'Searching...' : 'Search'}
-          </Button>
-        </Card>
-
-        {/* Stats Container */}
-        <div className="stats-container">
-          <Card className="stat-card">
-            <div className="stat-icon">
-              <ShoppingCart size={32} color={COLORS.PRIMARY} />
+          {/* Loading Overlay */}
+          {(isLoading || locationLoading) && (
+            <div className="loading-overlay">
+              <LoadingSpinner
+                size="large"
+                text={isLoading ? 'Searching for items...' : 'Getting your location...'}
+              />
             </div>
-            <div className="stat-content">
-              <div className="stat-number">{cart.length}</div>
-              <div className="stat-label">Items in Cart</div>
-            </div>
-          </Card>
-
-          <Card className="stat-card">
-            <div className="stat-icon">
-              <TrendingUp size={32} color={COLORS.SECONDARY} />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">${totalSavings.toFixed(2)}</div>
-              <div className="stat-label">Total Saved</div>
-            </div>
-          </Card>
+          )}
         </div>
-
-        {/* Action Buttons */}
-        <div className="action-buttons">
-          <Button
-            onClick={handleNavigateToCart}
-            variant="secondary"
-            size="large"
-            className="action-button"
-          >
-            <ShoppingCart size={20} />
-            View Cart ({cart.length})
-          </Button>
-
-          <Button
-            onClick={handleNavigateToSavings}
-            variant="secondary"
-            size="large"
-            className="action-button"
-          >
-            <TrendingUp size={20} />
-            Savings History
-          </Button>
-        </div>
-
-        {/* Loading Overlay */}
-        {(isLoading || locationLoading) && (
-          <div className="loading-overlay">
-            <LoadingSpinner
-              size="large"
-              text={isLoading ? 'Searching for items...' : 'Getting your location...'}
-            />
-          </div>
-        )}
       </div>
-    </div>
+    </>
   );
 };
 
