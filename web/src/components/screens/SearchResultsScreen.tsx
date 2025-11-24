@@ -1,28 +1,57 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Store } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import NavBar from '../common/NavBar';
-import ProductCard from '../common/ProductCard';
+import ProductGroupCard from '../common/ProductGroupCard';
 import Button from '../common/Button';
 import LoadingSpinner from '../common/LoadingSpinner';
 import './SearchResultsScreen.css';
 
+interface GroupedProduct {
+  productName: string;
+  items: any[];
+  lowestPrice: number;
+  image: string;
+}
+
 const SearchResultsScreen: React.FC = () => {
   const navigate = useNavigate();
   const { searchResults, cart, addToCart, isLoading } = useApp();
-  const [groupedItems, setGroupedItems] = useState<Record<string, any[]>>({});
+  const [groupedProducts, setGroupedProducts] = useState<GroupedProduct[]>([]);
 
-  // Group items by merchant
+  // Group products by name and sort stores by price
   useEffect(() => {
-    const grouped = searchResults.reduce((acc, item) => {
-      const merchant = item.merchant || 'Other';
-      if (!acc[merchant]) acc[merchant] = [];
-      acc[merchant].push(item);
-      return acc;
-    }, {} as Record<string, any[]>);
-    
-    setGroupedItems(grouped);
+    if (searchResults.length > 0) {
+      const groups: Record<string, any[]> = {};
+
+      // Group items by product name
+      searchResults.forEach(item => {
+        const productName = item.name.trim();
+        if (!groups[productName]) {
+          groups[productName] = [];
+        }
+        groups[productName].push(item);
+      });
+
+      // Convert to array and process each group
+      const groupedArray = Object.entries(groups).map(([productName, items]) => {
+        // Sort items by price (lowest first)
+        const sortedItems = items.sort((a, b) => a.current_price - b.current_price);
+        
+        return {
+          productName,
+          items: sortedItems,
+          lowestPrice: sortedItems[0].current_price,
+          image: sortedItems[0].image_url || '',
+        };
+      });
+
+      // Sort groups by lowest price
+      groupedArray.sort((a, b) => a.lowestPrice - b.lowestPrice);
+
+      setGroupedProducts(groupedArray);
+    }
   }, [searchResults]);
 
   const handleAddToCart = (item: any) => {
@@ -47,7 +76,9 @@ const SearchResultsScreen: React.FC = () => {
       <>
         <NavBar />
         <div className="search-results-screen">
-          <LoadingSpinner size="large" text="Loading products..." />
+          <div className="loading-container">
+            <LoadingSpinner size="large" text="Finding the best deals..." />
+          </div>
         </div>
       </>
     );
@@ -59,7 +90,7 @@ const SearchResultsScreen: React.FC = () => {
         <NavBar />
         <div className="search-results-screen">
           <div className="container">
-            <Button onClick={() => navigate('/')} variant="secondary">
+            <Button onClick={() => navigate('/')} variant="secondary" className="back-btn">
               <ArrowLeft size={20} />
               Back to Home
             </Button>
@@ -78,41 +109,27 @@ const SearchResultsScreen: React.FC = () => {
       <NavBar />
       <div className="search-results-screen">
         <div className="container">
-          <div className="header-section">
-            <Button onClick={() => navigate('/')} variant="secondary" size="medium">
+          <div className="results-header">
+            <Button onClick={() => navigate('/')} variant="secondary" size="medium" className="back-btn">
               <ArrowLeft size={20} />
               Back
             </Button>
-            <h2>Search Results ({searchResults.length} items)</h2>
+            <h1 className="results-count">{groupedProducts.length} products found</h1>
           </div>
 
-          {/* Group products by merchant */}
-          {Object.entries(groupedItems).map(([merchant, items]) => (
-            <div key={merchant} className="merchant-group">
-              <div className="merchant-header">
-                <Store size={24} />
-                <h3>{merchant}</h3>
-                <span className="item-count">({items.length} items)</span>
-              </div>
-              
-              <div className="products-grid">
-                {items.map((item) => (
-                  <ProductCard
-                    key={item.global_id}
-                    product={{
-                      ...item,
-                      quantity: 100,
-                      expiring_date: item.valid_to 
-                        ? new Date(item.valid_to).toLocaleDateString()
-                        : undefined,
-                    }}
-                    onAddToCart={() => handleAddToCart(item)}
-                    inCart={isInCart(item.global_id)}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
+          {/* Grouped Products */}
+          <div className="products-list">
+            {groupedProducts.map((group, index) => (
+              <ProductGroupCard
+                key={`${group.productName}-${index}`}
+                productName={group.productName}
+                items={group.items}
+                image={group.image}
+                onAddToCart={handleAddToCart}
+                isInCart={isInCart}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </>

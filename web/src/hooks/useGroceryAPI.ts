@@ -13,14 +13,27 @@ export interface GroceryItem {
   valid_to?: string;
 }
 
-// Cache utilities
+// Cache utilities with expiry based on earliest valid_to
 function saveItemsToCache(query: string, postal: string, items: GroceryItem[]) {
+  // Find the earliest valid_to date from all items
+  let minValidTo = Infinity;
+  items.forEach(item => {
+    if (item.valid_to) {
+      const validToTime = new Date(item.valid_to).getTime();
+      if (validToTime < minValidTo) {
+        minValidTo = validToTime;
+      }
+    }
+  });
+
   const cacheKey = `flipp_${query}_${postal}`;
   const cacheData = {
     items,
+    validTo: minValidTo === Infinity ? null : minValidTo,
     timestamp: Date.now(),
   };
   localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+  console.log('Cached items with expiry:', new Date(minValidTo).toLocaleString());
 }
 
 function loadItemsFromCache(query: string, postal: string): GroceryItem[] | null {
@@ -30,24 +43,28 @@ function loadItemsFromCache(query: string, postal: string): GroceryItem[] | null
   if (!cached) return null;
   
   try {
-    const { items, timestamp } = JSON.parse(cached);
+    const { items, validTo, timestamp } = JSON.parse(cached);
     const now = Date.now();
     
-    // Filter out expired items based on valid_to
-    const validItems = items.filter((item: GroceryItem) => {
-      if (!item.valid_to) return true;
-      return new Date(item.valid_to).getTime() > now;
-    });
-    
-    // If cache is older than 1 hour or no valid items, return null
-    if (now - timestamp > 3600000 || validItems.length === 0) {
+    // Check if cache has expired based on earliest valid_to
+    if (validTo && now > validTo) {
+      console.log('Cache expired based on valid_to date');
       localStorage.removeItem(cacheKey);
       return null;
     }
     
-    return validItems;
+    // Also invalidate if cache is older than 24 hours
+    if (now - timestamp > 24 * 60 * 60 * 1000) {
+      console.log('Cache expired (24 hours old)');
+      localStorage.removeItem(cacheKey);
+      return null;
+    }
+    
+    console.log('Loaded from cache:', items.length, 'items');
+    return items;
   } catch (error) {
     console.error('Cache parse error:', error);
+    localStorage.removeItem(cacheKey);
     return null;
   }
 }
@@ -60,7 +77,6 @@ export const useGroceryAPI = () => {
     // Check cache first
     const cached = loadItemsFromCache(query, postalCode);
     if (cached && cached.length > 0) {
-      console.log('Loaded from cache:', cached.length, 'items');
       return cached;
     }
 
@@ -69,7 +85,9 @@ export const useGroceryAPI = () => {
 
     try {
       const url = `https://backflipp.wishabi.com/flipp/items/search?locale=en-ca&postal_code=${postalCode}&q=${query}`;
-      const response = await axios.get(url, { timeout: 10000 });
+      console.log('Fetching from API:', url);
+      
+      const response = await axios.get(url, { timeout: 15000 });
       
       const ecomItems = response.data.ecom_items || [];
       
@@ -89,8 +107,12 @@ export const useGroceryAPI = () => {
         }))
         .sort((a, b) => a.current_price - b.current_price);
 
+      console.log('Fetched items:', processedItems.length);
+
       // Save to cache
-      saveItemsToCache(query, postalCode, processedItems);
+      if (processedItems.length > 0) {
+        saveItemsToCache(query, postalCode, processedItems);
+      }
       
       return processedItems;
     } catch (err: any) {

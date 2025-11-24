@@ -14,7 +14,18 @@ import './HomeScreen.css';
 
 const HomeScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, postalCode, setPostalCode, setLocationInfo, savingsHistory, isLoading, error } = useApp();
+const { 
+  cart, 
+  postalCode, 
+  setPostalCode, 
+  setLocationInfo, 
+  savingsHistory, 
+  isLoading, 
+  setIsLoading,
+  error,
+  setError,
+  setSearchResults 
+} = useApp();
   const { getCurrentLocation } = useLocation();
   const { searchItems } = useGroceryAPI();
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,20 +55,37 @@ const HomeScreen: React.FC = () => {
   };
 
   // Handle search
-  const handleSearch = async () => {
-    if (!searchQuery.trim() || !postalCode.trim()) {
-      return;
-    }
+// Handle search
+const handleSearch = async () => {
+  if (!searchQuery.trim() || !postalCode.trim()) {
+    setError('Please enter both a search term and postal code');
+    return;
+  }
 
-    try {
-      const results = await searchItems(searchQuery, postalCode);
-      if (results.length > 0) {
-        navigate('/search');
-      }
-    } catch (error) {
-      console.error('Search error:', error);
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const results = await searchItems(searchQuery, postalCode);
+    
+    // Save results to context
+    setSearchResults(results);
+    
+    if (results.length > 0) {
+      navigate('/search');
+    } else {
+      setError('No items found. Try searching for something else.');
     }
-  };
+  } catch (error: any) {
+    console.error('Search error:', error);
+    setError(error.message || 'Failed to search items. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+
 
   // Handle navigation to cart
   const handleNavigateToCart = () => {

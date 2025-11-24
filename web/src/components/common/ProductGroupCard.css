@@ -1,0 +1,265 @@
+.product-group-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.product-group-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Main Product Header */
+.product-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  background: #fafafa;
+  border-bottom: 1px solid #e5e5e5;
+  cursor: pointer;
+}
+
+.product-main-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.product-group-image {
+  width: 80px;
+  height: 80px;
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  flex-shrink: 0;
+}
+
+.product-group-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.product-group-details {
+  flex: 1;
+}
+
+.product-group-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.store-count {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+}
+
+.expand-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+  color: #666;
+  display: flex;
+  align-items: center;
+}
+
+.expand-button:hover {
+  background: #e5e5e5;
+}
+
+/* Store Items List */
+.store-items-list {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.store-items-list.expanded {
+  max-height: 2000px;
+}
+
+.store-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s;
+}
+
+.store-item:last-child {
+  border-bottom: none;
+}
+
+.store-item:hover {
+  background: #fafafa;
+}
+
+.store-item.lowest {
+  background: #f0fdf4;
+}
+
+.store-item.lowest:hover {
+  background: #dcfce7;
+}
+
+/* Store Item Info */
+.store-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.store-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.store-icon {
+  color: #999;
+}
+
+.store-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.lowest-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffd93d;
+  color: #1a1a1a;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+/* Price Row */
+.price-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.price-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #3eaf7c;
+}
+
+.price-difference {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ff4757;
+  background: #ffe0e6;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+/* Store Item Action */
+.store-item-action {
+  margin-left: 1rem;
+}
+
+.add-to-cart-small {
+  background: #3eaf7c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.add-to-cart-small:hover {
+  background: #34966a;
+}
+
+.add-to-cart-small:active {
+  transform: scale(0.98);
+}
+
+.in-cart-label {
+  color: #27ae60;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background: #d4edda;
+  padding: 10px 20px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .product-group-header {
+    padding: 1rem;
+  }
+
+  .product-group-image {
+    width: 60px;
+    height: 60px;
+  }
+
+  .product-group-name {
+    font-size: 1rem;
+  }
+
+  .store-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .store-item-action {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .add-to-cart-small,
+  .in-cart-label {
+    width: 100%;
+    text-align: center;
+  }
+
+  .price-value {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-main-info {
+    gap: 0.75rem;
+  }
+
+  .product-group-name {
+    font-size: 0.95rem;
+  }
+
+  .store-count {
+    font-size: 0.8rem;
+  }
+}

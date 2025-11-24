@@ -1,253 +1,175 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { AppContextType, CartItem, ShoppingItem, StoreComparison, LocationInfo, SavingsRecord } from '../types';
-import { STORAGE_KEYS } from '../utils/constants';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// State interface
-interface AppState {
-  cart: CartItem[];
-  postalCode: string;
-  locationInfo: LocationInfo | null;
-  searchResults: ShoppingItem[];
-  shoppingLists: SavingsRecord[];
-  savingsHistory: SavingsRecord[];
-  comparison: StoreComparison | null;
-  isLoading: boolean;
-  error: string | null;
+export interface CartItem {
+  id: string;
+  global_id: string;
+  name: string;
+  merchant: string;
+  merchant_id: number;
+  current_price: number;
+  image_url?: string;
+  quantity: number;
 }
 
-// Action types
-type AppAction =
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'SET_CART'; payload: CartItem[] }
-  | { type: 'SET_POSTAL_CODE'; payload: string }
-  | { type: 'SET_LOCATION_INFO'; payload: LocationInfo | null }
-  | { type: 'SET_SEARCH_RESULTS'; payload: ShoppingItem[] }
-  | { type: 'SET_COMPARISON'; payload: StoreComparison | null }
-  | { type: 'SET_SAVINGS_HISTORY'; payload: SavingsRecord[] }
-  | { type: 'ADD_TO_CART'; payload: { item: ShoppingItem; quantity?: number } }
-  | { type: 'REMOVE_FROM_CART'; payload: string }
-  | { type: 'UPDATE_QUANTITY'; payload: { itemId: string; delta: number } }
-  | { type: 'CLEAR_CART' }
-  | { type: 'ADD_SAVINGS_RECORD'; payload: SavingsRecord };
+export interface SavingsRecord {
+  id: string;
+  shopping_list_id: string;
+  best_store: string;
+  total_cost: number;
+  potential_costs: Record<string, number>;
+  savings: number;
+  completed_at: string;
+}
 
-// Initial state
-const initialState: AppState = {
-  cart: [],
-  postalCode: '',
-  locationInfo: null,
-  searchResults: [],
-  shoppingLists: [],
-  savingsHistory: [],
-  comparison: null,
-  isLoading: false,
-  error: null,
-};
+export interface LocationInfo {
+  postal_code: string;
+  latitude?: number;
+  longitude?: number;
+  city?: string;
+  province?: string;
+}
 
-// Reducer function
-const appReducer = (state: AppState, action: AppAction): AppState => {
-  switch (action.type) {
-    case 'SET_LOADING':
-      return { ...state, isLoading: action.payload };
+interface AppContextType {
+  cart: CartItem[];
+  addToCart: (item: CartItem) => void;
+  removeFromCart: (itemId: string) => void;
+  updateCartItemQuantity: (itemId: string, quantity: number) => void;
+  clearCart: () => void;
+  searchResults: any[];
+  setSearchResults: (results: any[]) => void;
+  postalCode: string;
+  setPostalCode: (code: string) => void;
+  locationInfo: LocationInfo | null;
+  setLocationInfo: (info: LocationInfo | null) => void;
+  savingsHistory: SavingsRecord[];
+  addSavingsRecord: (record: SavingsRecord) => void;
+  isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
+  error: string | null;
+  setError: (error: string | null) => void;
+}
 
-    case 'SET_ERROR':
-      return { ...state, error: action.payload, isLoading: false };
-
-    case 'SET_CART':
-      return { ...state, cart: action.payload };
-
-    case 'SET_POSTAL_CODE':
-      return { ...state, postalCode: action.payload };
-
-    case 'SET_LOCATION_INFO':
-      return { ...state, locationInfo: action.payload };
-
-    case 'SET_SEARCH_RESULTS':
-      return { ...state, searchResults: action.payload };
-
-    case 'SET_COMPARISON':
-      return { ...state, comparison: action.payload };
-
-    case 'SET_SAVINGS_HISTORY':
-      return { ...state, savingsHistory: action.payload };
-
-    case 'ADD_TO_CART': {
-      const { item, quantity = 1 } = action.payload;
-      const existingItem = state.cart.find(i => i.global_id === item.global_id);
-
-      let newCart: CartItem[];
-      if (existingItem) {
-        newCart = state.cart.map(i =>
-          i.global_id === item.global_id
-            ? { ...i, quantity: i.quantity + quantity }
-            : i
-        );
-      } else {
-        newCart = [...state.cart, {
-          ...item,
-          quantity,
-          added_at: new Date().toISOString(),
-          id: Date.now().toString()
-        }];
-      }
-
-      return { ...state, cart: newCart };
-    }
-
-    case 'REMOVE_FROM_CART':
-      return {
-        ...state,
-        cart: state.cart.filter(item => item.id !== action.payload)
-      };
-
-    case 'UPDATE_QUANTITY': {
-      const { itemId, delta } = action.payload;
-      const newCart = state.cart.map(item => {
-        if (item.id === itemId) {
-          const newQuantity = Math.max(1, item.quantity + delta);
-          return { ...item, quantity: newQuantity };
-        }
-        return item;
-      });
-
-      return { ...state, cart: newCart };
-    }
-
-    case 'CLEAR_CART':
-      return { ...state, cart: [], comparison: null };
-
-    case 'ADD_SAVINGS_RECORD':
-      return {
-        ...state,
-        savingsHistory: [action.payload, ...state.savingsHistory],
-      };
-
-    default:
-      return state;
-  }
-};
-
-// Context provider
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(appReducer, initialState);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [postalCode, setPostalCode] = useState('');
+  const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null);
+  const [savingsHistory, setSavingsHistory] = useState<SavingsRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load saved data from localStorage
+  // Load cart from localStorage on mount
   useEffect(() => {
-    const loadSavedData = () => {
-      try {
-        const savedPostalCode = localStorage.getItem(STORAGE_KEYS.POSTAL_CODE);
-        const savedCart = localStorage.getItem(STORAGE_KEYS.SHOPPING_CART);
-        const savedLocation = localStorage.getItem(STORAGE_KEYS.LOCATION_INFO);
-
-        if (savedPostalCode) {
-          dispatch({ type: 'SET_POSTAL_CODE', payload: savedPostalCode });
-        }
-        if (savedCart) {
-          dispatch({ type: 'SET_CART', payload: JSON.parse(savedCart) });
-        }
-        if (savedLocation) {
-          dispatch({ type: 'SET_LOCATION_INFO', payload: JSON.parse(savedLocation) });
-        }
-      } catch (error) {
-        console.error('Error loading saved data:', error);
+    try {
+      const savedCart = localStorage.getItem('grocery_cart');
+      if (savedCart) {
+        setCart(JSON.parse(savedCart));
+        console.log('Cart loaded from localStorage');
       }
-    };
-
-    loadSavedData();
+    } catch (error) {
+      console.error('Error loading cart from localStorage:', error);
+    }
   }, []);
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEYS.SHOPPING_CART, JSON.stringify(state.cart));
+      localStorage.setItem('grocery_cart', JSON.stringify(cart));
+      console.log('Cart saved to localStorage');
     } catch (error) {
-      console.error('Error saving cart:', error);
+      console.error('Error saving cart to localStorage:', error);
     }
-  }, [state.cart]);
+  }, [cart]);
 
-  // Save postal code to localStorage whenever it changes
+  // Load savings history from localStorage
   useEffect(() => {
     try {
-      if (state.postalCode) {
-        localStorage.setItem(STORAGE_KEYS.POSTAL_CODE, state.postalCode);
+      const savedHistory = localStorage.getItem('savings_history');
+      if (savedHistory) {
+        setSavingsHistory(JSON.parse(savedHistory));
       }
     } catch (error) {
-      console.error('Error saving postal code:', error);
+      console.error('Error loading savings history:', error);
     }
-  }, [state.postalCode]);
+  }, []);
 
-  // Context actions
-  const actions: Omit<AppContextType, keyof AppState> = {
-    addToCart: (item: ShoppingItem, quantity?: number) => {
-      dispatch({ type: 'ADD_TO_CART', payload: { item, quantity } });
-    },
+  // Save savings history to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('savings_history', JSON.stringify(savingsHistory));
+    } catch (error) {
+      console.error('Error saving savings history:', error);
+    }
+  }, [savingsHistory]);
 
-    removeFromCart: (itemId: string) => {
-      dispatch({ type: 'REMOVE_FROM_CART', payload: itemId });
-    },
-
-    updateQuantity: (itemId: string, delta: number) => {
-      dispatch({ type: 'UPDATE_QUANTITY', payload: { itemId, delta } });
-    },
-
-    clearCart: () => {
-      dispatch({ type: 'CLEAR_CART' });
-    },
-
-    setPostalCode: (postalCode: string) => {
-      dispatch({ type: 'SET_POSTAL_CODE', payload: postalCode });
-    },
-
-    setLocationInfo: (locationInfo: LocationInfo) => {
-      try {
-        localStorage.setItem(STORAGE_KEYS.LOCATION_INFO, JSON.stringify(locationInfo));
-      } catch (error) {
-        console.error('Error saving location info:', error);
+  const addToCart = (item: CartItem) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(cartItem => cartItem.global_id === item.global_id);
+      if (existingItem) {
+        return prevCart.map(cartItem =>
+          cartItem.global_id === item.global_id
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            : cartItem
+        );
       }
-      dispatch({ type: 'SET_LOCATION_INFO', payload: locationInfo });
-    },
-
-    setSearchResults: (results: ShoppingItem[]) => {
-      dispatch({ type: 'SET_SEARCH_RESULTS', payload: results });
-    },
-
-    setComparison: (comparison: StoreComparison | null) => {
-      dispatch({ type: 'SET_COMPARISON', payload: comparison });
-    },
-
-    addShoppingList: (list: SavingsRecord) => {
-      // This would add to shopping lists if needed
-      console.log('Shopping list added:', list);
-    },
-
-    addSavingsRecord: (record: SavingsRecord) => {
-      dispatch({ type: 'ADD_SAVINGS_RECORD', payload: record });
-    },
-
-    clearError: () => {
-      dispatch({ type: 'SET_ERROR', payload: null });
-    },
-
-    setLoading: (loading: boolean) => {
-      dispatch({ type: 'SET_LOADING', payload: loading });
-    },
+      return [...prevCart, { ...item, quantity: 1 }];
+    });
   };
 
-  const contextValue: AppContextType = {
-    ...state,
-    ...actions,
+  const removeFromCart = (itemId: string) => {
+    setCart(prevCart => prevCart.filter(item => item.global_id !== itemId));
+  };
+
+  const updateCartItemQuantity = (itemId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(itemId);
+      return;
+    }
+    setCart(prevCart =>
+      prevCart.map(item =>
+        item.global_id === itemId ? { ...item, quantity } : item
+      )
+    );
+  };
+
+  const clearCart = () => {
+    setCart([]);
+    localStorage.removeItem('grocery_cart');
+  };
+
+  const addSavingsRecord = (record: SavingsRecord) => {
+    setSavingsHistory(prev => [record, ...prev]);
   };
 
   return (
-    <AppContext.Provider value={contextValue}>
+    <AppContext.Provider
+      value={{
+        cart,
+        addToCart,
+        removeFromCart,
+        updateCartItemQuantity,
+        clearCart,
+        searchResults,
+        setSearchResults,
+        postalCode,
+        setPostalCode,
+        locationInfo,
+        setLocationInfo,
+        savingsHistory,
+        addSavingsRecord,
+        isLoading,
+        setIsLoading,
+        error,
+        setError,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
 };
 
-// Hook to use the context
 export const useApp = () => {
   const context = useContext(AppContext);
   if (context === undefined) {
