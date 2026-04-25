@@ -1,7 +1,7 @@
 """Deal Alert Engine — Flyrr Season 2
 
 Scheduled job that polls the Flipp API for watched products and fires
-email notifications when a price drops below the user's target threshold.
+email + Telegram notifications when a price drops below the user's target.
 
 Run standalone:  python alerts.py
 Or import and call check_all_alerts() from a cron / APScheduler job.
@@ -32,43 +32,64 @@ mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ["DB_NAME"]]
 
-# ── Email config (optional — set in .env) ───────────────────────────────────
+# ── Email config (set in .env) ───────────────────────────────────────────────
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASS = os.getenv("SMTP_PASS", "")
 FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USER)
 
+# ── Telegram config (set in .env) ────────────────────────────────────────────
+# TELEGRAM_BOT_TOKEN: from @BotFather
+# TELEGRAM_CHAT_ID:   your personal chat ID or a group/channel ID
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+TELEGRAM_API_BASE = "https://api.telegram.org/bot"
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
-def _fetch_current_price(product_name: str, postal_code: str) -> list[dict]:
-    """Hit the Flipp search API and return processed items sorted by price."""
-    url = (
-        f"https://backflipp.wishabi.com/flipp/items/search"
-        f"?locale=en-ca&postal_code={postal_code}&q={product_name}"
-    )
+
+# ── Telegram helpers ─────────────────────────────────────────────────────────
+def _send_telegram(chat_id: str, text: str, parse_mode: str = "HTML") -> bool:
+    """Send a Telegram message via Bot API. Returns True on success."""
+    if not TELEGRAM_BOT_TOKEN:
+        logger.warning("TELEGRAM_BOT_TOKEN not set — skipping Telegram notification")
+        return False
+    if not chat_id:
+        logger.warning("No Telegram chat_id provided — skipping")
+        return False
     try:
-        resp = requests.get(url, timeout=10)
+        url = f"{TELEGRAM_API_BASE}{TELEGRAM_BOT_TOKEN}/sendMessage"
+        payload = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
+        resp = requests.post(url, json=payload, timeout=10)
         resp.raise_for_status()
-        ecom = resp.json().get("ecom_items", [])
-        results = [
-            {
-                "name": i.get("name", ""),
-                "merchant": i.get("merchant", ""),
-                "current_price": float(i.get("current_price", 0)),
-                "image_url": i.get("image_url", ""),
-                "merchant_logo": i.get("merchant_logo", ""),
-            }
-            for i in ecom
-            if float(i.get("current_price", 0)) > 0
-        ]
-        results.sort(key=lambda x: x["current_price"])
-        return results
+        logger.info("Telegram message sent to chat_id %s", chat_id)
+        return True
     except Exception as exc:
-        logger.error("Flipp fetch failed for '%s': %s", product_name, exc)
-        return []
+        logger.error("Telegram send failed: %s", exc)
+        return False
 
 
+def _build_telegram_message(alert: dict, best_hit: dict) -> str:
+    """Format a Telegram HTML message for a price drop alert."""
+    product = alert["product_name"]
+    target = alert["target_price"]
+    found_price = best_hit["current_price"]
+    merchant = best_hit["merchant"]
+    last_seen = alert.get("last_seen_price") or found_price
+    savings = round(last_seen - found_price, 2)
+    savings_line = f"\n💰 <b>You save ${savings:.2f}</b> vs last seen!" if savings > 0 else ""
+
+    return (
+        f"🛒 <b>Flyrr Deal Alert</b>\n\n"
+        f"<b>{product}</b>\n"
+        f"📍 At <b>{merchant}</b>\n"
+        f"💵 Now: <b>${found_price:.2f}</b>\n"
+        f"🎯 Your target: ${target:.2f}"
+        f"{savings_line}\n\n"
+        f"<i>Open Flyrr to add it to your shopping list.</i>"
+    )
+
+
+# ── Email helpers ─────────────────────────────────────────────────────────────
 def _send_email(to_email: str, subject: str, html_body: str) -> bool:
     """Send an HTML email via SMTP. Returns True on success."""
     if not SMTP_USER or not SMTP_PASS:
@@ -129,6 +150,35 @@ def _build_alert_email(alert: dict, best_hit: dict) -> str:
     """
 
 
+# ── Price fetch ───────────────────────────────────────────────────────────────
+def _fetch_current_price(product_name: str, postal_code: str) -> list[dict]:
+    """Hit the Flipp search API and return processed items sorted by price."""
+    url = (
+        f"https://backflipp.wishabi.com/flipp/items/search"
+        f"?locale=en-ca&postal_code={postal_code}&q={product_name}"
+    )
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        ecom = resp.json().get("ecom_items", [])
+        results = [
+            {
+                "name": i.get("name", ""),
+                "merchant": i.get("merchant", ""),
+                "current_price": float(i.get("current_price", 0)),
+                "image_url": i.get("image_url", ""),
+                "merchant_logo": i.get("merchant_logo", ""),
+            }
+            for i in ecom
+            if float(i.get("current_price", 0)) > 0
+        ]
+        results.sort(key=lambda x: x["current_price"])
+        return results
+    except Exception as exc:
+        logger.error("Flipp fetch failed for '%s': %s", product_name, exc)
+        return []
+
+
 # ── Core check logic ─────────────────────────────────────────────────────────
 async def check_all_alerts() -> dict:
     """Poll prices for every active alert and fire notifications where triggered."""
@@ -141,6 +191,8 @@ async def check_all_alerts() -> dict:
         postal_code = alert.get("postal_code", "")
         target_price = float(alert.get("target_price", 0))
         notify_email = alert.get("notify_email", "")
+        notify_telegram = alert.get("notify_telegram", "")  # per-alert chat_id override
+        telegram_chat_id = notify_telegram or TELEGRAM_CHAT_ID
 
         if not product_name or not postal_code:
             continue
@@ -153,7 +205,6 @@ async def check_all_alerts() -> dict:
         best = hits[0]  # already sorted cheapest-first
         current_price = best["current_price"]
 
-        # Persist the last-seen price for UI display
         update_fields: dict = {
             "last_seen_price": current_price,
             "last_checked_at": datetime.utcnow().isoformat(),
@@ -165,9 +216,11 @@ async def check_all_alerts() -> dict:
             update_fields["last_triggered_at"] = datetime.utcnow().isoformat()
             fired += 1
 
+            channels_fired = []
+
             # Log notification record
             await db.alert_notifications.insert_one({
-                "alert_id": str(alert["_id"]),
+                "alert_id": str(alert.get("id", alert.get("_id", ""))),
                 "product_name": product_name,
                 "found_price": current_price,
                 "target_price": target_price,
@@ -175,11 +228,26 @@ async def check_all_alerts() -> dict:
                 "triggered_at": datetime.utcnow().isoformat(),
             })
 
-            # Send email
+            # Send Telegram notification
+            if telegram_chat_id:
+                tg_msg = _build_telegram_message(alert, best)
+                sent = _send_telegram(telegram_chat_id, tg_msg)
+                if sent:
+                    channels_fired.append("telegram")
+
+            # Send email notification
             if notify_email:
                 subject = f"🛒 Flyrr Alert: {product_name} is now ${current_price:.2f}!"
                 html = _build_alert_email(alert, best)
-                _send_email(notify_email, subject, html)
+                sent = _send_email(notify_email, subject, html)
+                if sent:
+                    channels_fired.append("email")
+
+            logger.info(
+                "Alert fired for '%s' @ $%.2f (target $%.2f) via %s",
+                product_name, current_price, target_price,
+                ", ".join(channels_fired) if channels_fired else "no channel configured"
+            )
 
         await db.price_alerts.update_one(
             {"_id": alert["_id"]}, {"$set": update_fields}
