@@ -25,7 +25,9 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# Models
+
+# ── Models ────────────────────────────────────────────────────────────────────
+
 class ShoppingItem(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     global_id: str
@@ -58,7 +60,22 @@ class SearchRequest(BaseModel):
 class AddItemRequest(BaseModel):
     item: ShoppingItem
 
-# Routes
+# ── Deal Alert Models ─────────────────────────────────────────────────────────
+
+class PriceAlertCreate(BaseModel):
+    product_name: str
+    postal_code: str
+    target_price: float
+    notify_email: Optional[str] = None
+
+class PriceAlertUpdate(BaseModel):
+    target_price: Optional[float] = None
+    notify_email: Optional[str] = None
+    active: Optional[bool] = None
+
+
+# ── Existing routes ───────────────────────────────────────────────────────────
+
 @api_router.get("/")
 async def root():
     return {"message": "Grocery Price Comparison API"}
@@ -71,18 +88,12 @@ async def search_items(request: SearchRequest):
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         data = response.json()
-        
-        # Process and return ecom items (grocery products)
         ecom_items = data.get('ecom_items', [])
         processed_items = []
-        
         for item in ecom_items:
             current_price = float(item.get('current_price', 0))
-            
-            # Filter out items with $0 price
             if current_price <= 0:
                 continue
-            
             processed_items.append({
                 'global_id': item.get('global_id', ''),
                 'name': item.get('name', ''),
@@ -93,10 +104,7 @@ async def search_items(request: SearchRequest):
                 'image_url': item.get('image_url', ''),
                 'description': item.get('description', ''),
             })
-        
-        # Sort by price (cheapest first)
         processed_items.sort(key=lambda x: x['current_price'])
-        
         return {'success': True, 'items': processed_items}
     except Exception as e:
         logging.error(f"Error searching items: {str(e)}")
@@ -104,134 +112,192 @@ async def search_items(request: SearchRequest):
 
 @api_router.post("/shopping-list")
 async def create_shopping_list(shopping_list: ShoppingList):
-    """Create or update shopping list"""
     try:
         list_dict = shopping_list.dict()
         await db.shopping_lists.update_one(
-            {'id': shopping_list.id},
-            {'$set': list_dict},
-            upsert=True
+            {'id': shopping_list.id}, {'$set': list_dict}, upsert=True
         )
         return {'success': True, 'shopping_list': shopping_list}
     except Exception as e:
-        logging.error(f"Error saving shopping list: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/shopping-list/{list_id}")
 async def get_shopping_list(list_id: str):
-    """Get shopping list by ID"""
     try:
         shopping_list = await db.shopping_lists.find_one({'id': list_id})
         if not shopping_list:
             return {'success': False, 'message': 'Shopping list not found'}
         return {'success': True, 'shopping_list': shopping_list}
     except Exception as e:
-        logging.error(f"Error getting shopping list: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/shopping-lists")
 async def get_all_shopping_lists():
-    """Get all shopping lists"""
     try:
         lists = await db.shopping_lists.find({'completed': False}).sort('created_at', -1).to_list(100)
-        # Convert ObjectId to string for JSON serialization
         for lst in lists:
             if '_id' in lst:
                 lst['_id'] = str(lst['_id'])
         return {'success': True, 'lists': lists}
     except Exception as e:
-        logging.error(f"Error getting shopping lists: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/compare-stores")
 async def compare_stores(shopping_list: ShoppingList):
-    """Compare prices across stores for the shopping list"""
     try:
-        # Group items by store and calculate totals
         store_totals = {}
         item_by_store = {}
-        
         for item in shopping_list.items:
             merchant = item.merchant
             price = item.current_price * item.quantity
-            
             if merchant not in store_totals:
                 store_totals[merchant] = 0
                 item_by_store[merchant] = []
-            
             store_totals[merchant] += price
             item_by_store[merchant].append({
-                'name': item.name,
-                'price': item.current_price,
-                'quantity': item.quantity,
-                'total': price
+                'name': item.name, 'price': item.current_price,
+                'quantity': item.quantity, 'total': price
             })
-        
-        # Find best store (lowest total)
         if store_totals:
             best_store = min(store_totals.items(), key=lambda x: x[1])
-            best_store_name = best_store[0]
-            best_store_total = best_store[1]
-            
-            # Calculate potential savings
+            best_store_name, best_store_total = best_store
             worst_store_total = max(store_totals.values())
             savings = worst_store_total - best_store_total
         else:
             best_store_name = None
             best_store_total = 0
             savings = 0
-        
         return {
-            'success': True,
-            'best_store': best_store_name,
+            'success': True, 'best_store': best_store_name,
             'best_store_total': best_store_total,
             'store_totals': store_totals,
             'item_by_store': item_by_store,
             'savings': savings
         }
     except Exception as e:
-        logging.error(f"Error comparing stores: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/savings")
 async def save_savings_record(record: SavingsRecord):
-    """Save a completed shopping trip with savings"""
     try:
         record_dict = record.dict()
         await db.savings_records.insert_one(record_dict)
-        
-        # Mark shopping list as completed
         await db.shopping_lists.update_one(
-            {'id': record.shopping_list_id},
-            {'$set': {'completed': True}}
+            {'id': record.shopping_list_id}, {'$set': {'completed': True}}
         )
-        
         return {'success': True, 'record': record}
     except Exception as e:
-        logging.error(f"Error saving savings record: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/savings")
 async def get_savings_history():
-    """Get savings history"""
     try:
         records = await db.savings_records.find().sort('completed_at', -1).to_list(100)
-        # Convert ObjectId to string for JSON serialization
         for record in records:
             if '_id' in record:
                 record['_id'] = str(record['_id'])
         total_savings = sum(record.get('savings', 0) for record in records)
-        
-        return {
-            'success': True,
-            'records': records,
-            'total_savings': total_savings
-        }
+        return {'success': True, 'records': records, 'total_savings': total_savings}
     except Exception as e:
-        logging.error(f"Error getting savings history: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# Include the router in the main app
+
+# ── Deal Alert Routes ─────────────────────────────────────────────────────────
+
+@api_router.post("/alerts")
+async def create_alert(alert: PriceAlertCreate):
+    """Create a new price-drop watch for a product."""
+    try:
+        doc = {
+            "id": str(uuid.uuid4()),
+            "product_name": alert.product_name,
+            "postal_code": alert.postal_code,
+            "target_price": alert.target_price,
+            "notify_email": alert.notify_email,
+            "active": True,
+            "created_at": datetime.utcnow().isoformat(),
+            "last_seen_price": None,
+            "last_checked_at": None,
+            "last_triggered_at": None,
+            "best_merchant": None,
+        }
+        await db.price_alerts.insert_one(doc)
+        doc.pop("_id", None)
+        return {"success": True, "alert": doc}
+    except Exception as e:
+        logging.error(f"Error creating alert: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/alerts")
+async def get_alerts():
+    """Return all price alerts sorted newest-first."""
+    try:
+        alerts = await db.price_alerts.find().sort("created_at", -1).to_list(200)
+        for a in alerts:
+            a.pop("_id", None)
+        return {"success": True, "alerts": alerts}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.patch("/alerts/{alert_id}")
+async def update_alert(alert_id: str, update: PriceAlertUpdate):
+    """Toggle active state or update target price / email."""
+    try:
+        fields = {k: v for k, v in update.dict().items() if v is not None}
+        if not fields:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        result = await db.price_alerts.update_one({"id": alert_id}, {"$set": fields})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Alert not found")
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.delete("/alerts/{alert_id}")
+async def delete_alert(alert_id: str):
+    """Permanently remove an alert."""
+    try:
+        result = await db.price_alerts.delete_one({"id": alert_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Alert not found")
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/alerts/check")
+async def trigger_alert_check():
+    """Manually trigger an alert check (can also be called by a cron job)."""
+    try:
+        from alerts import check_all_alerts
+        result = await check_all_alerts()
+        return {"success": True, **result}
+    except Exception as e:
+        logging.error(f"Alert check error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/alerts/notifications")
+async def get_alert_notifications():
+    """Return recent alert notification history."""
+    try:
+        notifs = await db.alert_notifications.find().sort("triggered_at", -1).to_list(100)
+        for n in notifs:
+            n.pop("_id", None)
+        return {"success": True, "notifications": notifs}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── App setup ─────────────────────────────────────────────────────────────────
+
 app.include_router(api_router)
 
 app.add_middleware(
@@ -242,7 +308,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
