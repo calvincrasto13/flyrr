@@ -73,6 +73,16 @@ class PriceAlertUpdate(BaseModel):
     notify_email: Optional[str] = None
     active: Optional[bool] = None
 
+# ── Semantic Matching Models ──────────────────────────────────────────────────
+
+class MatchRequest(BaseModel):
+    name_a: str
+    name_b: str
+
+class BestMatchRequest(BaseModel):
+    query: str
+    catalog: List[str]
+
 
 # ── Existing routes ───────────────────────────────────────────────────────────
 
@@ -293,6 +303,57 @@ async def get_alert_notifications():
             n.pop("_id", None)
         return {"success": True, "notifications": notifs}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Semantic Matching Routes ───────────────────────────────────────────────────
+
+@api_router.post("/match")
+async def match_products(request: MatchRequest):
+    """
+    Score a single pair of product names through the three-layer pipeline:
+    embedding similarity → optional Claude escalation → SQLite cache.
+    """
+    try:
+        from semantic_matcher import get_matcher
+        matcher = get_matcher()
+        result = matcher.match(request.name_a, request.name_b)
+        return {"success": True, **result}
+    except Exception as e:
+        logging.error(f"Match error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/match/best")
+async def find_best_match(request: BestMatchRequest):
+    """
+    Find the best semantic match for a query product name from a catalog list.
+    Used to cross-reference the same product across different store search results.
+    Returns the highest-confidence match, or null if nothing clears the threshold.
+    """
+    try:
+        from semantic_matcher import get_matcher
+        matcher = get_matcher()
+        best = matcher.find_best_match(request.query, request.catalog)
+        return {"success": True, "match": best}
+    except Exception as e:
+        logging.error(f"Best match error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/match/cache/stats")
+async def get_match_cache_stats():
+    """
+    Return SQLite cache analytics — total scored pairs, Claude call count,
+    and the Claude call rate. Useful for monitoring pipeline cost efficiency.
+    """
+    try:
+        from semantic_matcher import get_matcher
+        matcher = get_matcher()
+        stats = matcher.get_cache_stats()
+        return {"success": True, **stats}
+    except Exception as e:
+        logging.error(f"Cache stats error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
