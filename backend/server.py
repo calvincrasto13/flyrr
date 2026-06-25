@@ -4,9 +4,11 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime
 import requests
@@ -19,10 +21,10 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
+# Thread pool for running blocking matcher calls without blocking the async loop
+_thread_pool = ThreadPoolExecutor(max_workers=4)
 
-# Create a router with the /api prefix
+app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 
@@ -84,21 +86,182 @@ class BestMatchRequest(BaseModel):
     catalog: List[str]
 
 
-# ── Existing routes ───────────────────────────────────────────────────────────
+# ── Cross-Store Grouping Logic ────────────────────────────────────────────────
+
+def _group_products_across_stores(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Given a flat list of products from multiple stores (raw Flipp results),
+    use the semantic matcher to group items that represent the same product
+    across different merchants.
+
+    Algorithm:
+      1. Split items by merchant into per-store catalogs.
+      2. Pick the store with the most items as the reference store.
+      3. For every reference item, run find_best_match against each other store's catalog.
+      4. Build a product group: {canonical_name, stores: [...], best_price, savings}.
+      5. Items that matched are removed from other stores' candidate pools to avoid
+         double-counting the same match.
+
+    Returns a list of product groups sorted by savings opportunity (desc).
+    """
+    from semantic_matcher import get_matcher
+    matcher = get_matcher()
+
+    # Split by merchant
+    by_merchant: Dict[str, List[Dict]] = {}
+    for item in items:
+        m = item["merchant"]
+        by_merchant.setdefault(m, []).append(item)
+
+    merchants = list(by_merchant.keys())
+    if len(merchants) < 2:
+        # Nothing to cross-reference — return single-store groups
+        return [
+            {
+                "canonical_name": item["name"],
+                "stores": [{
+                    "merchant": item["merchant"],
+                    "name": item["name"],
+                    "price": item["current_price"],
+                    "image_url": item.get("image_url", ""),
+                    "merchant_logo": item.get("merchant_logo", ""),
+                    "global_id": item.get("global_id", ""),
+                }],
+                "best_price": item["current_price"],
+                "best_merchant": item["merchant"],
+                "worst_price": item["current_price"],
+                "savings_vs_worst": 0.0,
+                "match_method": "single_store",
+            }
+            for item in items
+        ]
+
+    # Reference store = most items (best anchor catalog)
+    ref_merchant = max(by_merchant, key=lambda m: len(by_merchant[m]))
+    ref_items = by_merchant[ref_merchant]
+    other_merchants = [m for m in merchants if m != ref_merchant]
+
+    # Track which items from other stores have already been matched
+    matched_ids: Dict[str, set] = {m: set() for m in other_merchants}
+
+    groups = []
+
+    for ref_item in ref_items:
+        group_stores = [{
+            "merchant": ref_item["merchant"],
+            "name": ref_item["name"],
+            "price": ref_item["current_price"],
+            "image_url": ref_item.get("image_url", ""),
+            "merchant_logo": ref_item.get("merchant_logo", ""),
+            "global_id": ref_item.get("global_id", ""),
+        }]
+        methods_used = set()
+
+        for other_merchant in other_merchants:
+            # Build catalog of unmatched items from this store
+            available = [
+                it for it in by_merchant[other_merchant]
+                if it.get("global_id", it["name"]) not in matched_ids[other_merchant]
+            ]
+            if not available:
+                continue
+
+            catalog_names = [it["name"] for it in available]
+            best = matcher.find_best_match(ref_item["name"], catalog_names)
+
+            if best and best["is_match"]:
+                # Find the full item dict for the matched name
+                matched_item = next(
+                    (it for it in available if it["name"] == best["matched_name"]),
+                    None
+                )
+                if matched_item:
+                    uid = matched_item.get("global_id", matched_item["name"])
+                    matched_ids[other_merchant].add(uid)
+                    group_stores.append({
+                        "merchant": matched_item["merchant"],
+                        "name": matched_item["name"],
+                        "price": matched_item["current_price"],
+                        "image_url": matched_item.get("image_url", ""),
+                        "merchant_logo": matched_item.get("merchant_logo", ""),
+                        "global_id": matched_item.get("global_id", ""),
+                        "match_confidence": round(best["confidence"], 3),
+                    })
+                    methods_used.add(best["method"])
+
+        prices = [s["price"] for s in group_stores]
+        best_store = min(group_stores, key=lambda s: s["price"])
+        worst_price = max(prices)
+        best_price = min(prices)
+
+        groups.append({
+            "canonical_name": ref_item["name"],
+            "stores": sorted(group_stores, key=lambda s: s["price"]),
+            "best_price": best_price,
+            "best_merchant": best_store["merchant"],
+            "worst_price": worst_price,
+            "savings_vs_worst": round(worst_price - best_price, 2),
+            "match_method": "claude" if "claude" in methods_used else
+                            "embedding" if methods_used else "single_store",
+            "store_count": len(group_stores),
+        })
+
+    # Also add unmatched items from other stores as single-store groups
+    for other_merchant in other_merchants:
+        for item in by_merchant[other_merchant]:
+            uid = item.get("global_id", item["name"])
+            if uid not in matched_ids[other_merchant]:
+                groups.append({
+                    "canonical_name": item["name"],
+                    "stores": [{
+                        "merchant": item["merchant"],
+                        "name": item["name"],
+                        "price": item["current_price"],
+                        "image_url": item.get("image_url", ""),
+                        "merchant_logo": item.get("merchant_logo", ""),
+                        "global_id": item.get("global_id", ""),
+                    }],
+                    "best_price": item["current_price"],
+                    "best_merchant": item["merchant"],
+                    "worst_price": item["current_price"],
+                    "savings_vs_worst": 0.0,
+                    "match_method": "single_store",
+                    "store_count": 1,
+                })
+
+    # Sort by savings opportunity — biggest savings first
+    groups.sort(key=lambda g: g["savings_vs_worst"], reverse=True)
+    return groups
+
+
+# ── Routes ────────────────────────────────────────────────────────────────────
 
 @api_router.get("/")
 async def root():
     return {"message": "Grocery Price Comparison API"}
 
+
 @api_router.post("/search")
 async def search_items(request: SearchRequest):
-    """Search for items using Flipp API"""
+    """
+    Search for items using the Flipp API, then run the semantic matching pipeline
+    to group equivalent products across different stores.
+
+    Response includes:
+      - `items`: flat list sorted by price (backwards compatible)
+      - `product_groups`: cross-store matched groups, sorted by savings opportunity
+      - `cross_store_count`: number of groups that appear in 2+ stores
+    """
     try:
-        url = f"https://backflipp.wishabi.com/flipp/items/search?locale=en-ca&postal_code={request.postal_code}&q={request.query}"
+        url = (
+            f"https://backflipp.wishabi.com/flipp/items/search"
+            f"?locale=en-ca&postal_code={request.postal_code}&q={request.query}"
+        )
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         data = response.json()
         ecom_items = data.get('ecom_items', [])
+
         processed_items = []
         for item in ecom_items:
             current_price = float(item.get('current_price', 0))
@@ -114,11 +277,30 @@ async def search_items(request: SearchRequest):
                 'image_url': item.get('image_url', ''),
                 'description': item.get('description', ''),
             })
+
         processed_items.sort(key=lambda x: x['current_price'])
-        return {'success': True, 'items': processed_items}
+
+        # Run semantic grouping in thread pool (SentenceTransformer is CPU-bound)
+        loop = asyncio.get_event_loop()
+        product_groups = await loop.run_in_executor(
+            _thread_pool,
+            _group_products_across_stores,
+            processed_items
+        )
+
+        cross_store_count = sum(1 for g in product_groups if g["store_count"] > 1)
+
+        return {
+            'success': True,
+            'items': processed_items,
+            'product_groups': product_groups,
+            'cross_store_count': cross_store_count,
+        }
+
     except Exception as e:
         logging.error(f"Error searching items: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @api_router.post("/shopping-list")
 async def create_shopping_list(shopping_list: ShoppingList):
@@ -154,9 +336,17 @@ async def get_all_shopping_lists():
 
 @api_router.post("/compare-stores")
 async def compare_stores(shopping_list: ShoppingList):
+    """
+    Compare prices across stores for items in a shopping list.
+    Groups items by merchant and finds the cheapest store overall.
+    Also computes potential_savings_if_split: how much you'd save buying
+    each item at its cheapest store individually.
+    """
     try:
         store_totals = {}
         item_by_store = {}
+        cheapest_per_item = []
+
         for item in shopping_list.items:
             merchant = item.merchant
             price = item.current_price * item.quantity
@@ -168,21 +358,29 @@ async def compare_stores(shopping_list: ShoppingList):
                 'name': item.name, 'price': item.current_price,
                 'quantity': item.quantity, 'total': price
             })
+            cheapest_per_item.append(item.current_price * item.quantity)
+
         if store_totals:
             best_store = min(store_totals.items(), key=lambda x: x[1])
             best_store_name, best_store_total = best_store
             worst_store_total = max(store_totals.values())
             savings = worst_store_total - best_store_total
+            # Theoretical minimum: buy each item at cheapest available price
+            theoretical_minimum = sum(cheapest_per_item)
         else:
             best_store_name = None
             best_store_total = 0
             savings = 0
+            theoretical_minimum = 0
+
         return {
-            'success': True, 'best_store': best_store_name,
+            'success': True,
+            'best_store': best_store_name,
             'best_store_total': best_store_total,
             'store_totals': store_totals,
             'item_by_store': item_by_store,
-            'savings': savings
+            'savings': savings,
+            'theoretical_minimum': theoretical_minimum,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -306,7 +504,7 @@ async def get_alert_notifications():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── Semantic Matching Routes ───────────────────────────────────────────────────
+# ── Semantic Matching Routes ──────────────────────────────────────────────────
 
 @api_router.post("/match")
 async def match_products(request: MatchRequest):
@@ -317,7 +515,10 @@ async def match_products(request: MatchRequest):
     try:
         from semantic_matcher import get_matcher
         matcher = get_matcher()
-        result = matcher.match(request.name_a, request.name_b)
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            _thread_pool, lambda: matcher.match(request.name_a, request.name_b)
+        )
         return {"success": True, **result}
     except Exception as e:
         logging.error(f"Match error: {e}")
@@ -334,7 +535,10 @@ async def find_best_match(request: BestMatchRequest):
     try:
         from semantic_matcher import get_matcher
         matcher = get_matcher()
-        best = matcher.find_best_match(request.query, request.catalog)
+        loop = asyncio.get_event_loop()
+        best = await loop.run_in_executor(
+            _thread_pool, lambda: matcher.find_best_match(request.query, request.catalog)
+        )
         return {"success": True, "match": best}
     except Exception as e:
         logging.error(f"Best match error: {e}")
@@ -378,3 +582,4 @@ logger = logging.getLogger(__name__)
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+    _thread_pool.shutdown(wait=False)
