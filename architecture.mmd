@@ -1,0 +1,44 @@
+flowchart TD
+    subgraph Frontend [React Frontend]
+        UI[User Interface]
+        Cart[Shopping Cart Context]
+        AlertsUI[Price Alerts Screen]
+    end
+
+    subgraph Backend [FastAPI Backend]
+        API[REST API Server]
+        Grouper[Union-Find Product Grouper]
+        Matcher[Three-Layer Semantic Matcher]
+        Stats[Stats & Budget Guard]
+        Alerts[Alert Engine & Scheduler]
+    end
+
+    subgraph MatchingPipeline [Three-Layer Matcher]
+        Cache[(SQLite Cache)]
+        Embed[Sentence Transformers]
+        Claude[Claude 3 Haiku]
+    end
+
+    subgraph External [External Services]
+        Flipp[Flipp Grocery API]
+        Mongo[(MongoDB)]
+        Resend[Resend Email API]
+    end
+
+    %% Flow
+    UI -- Search Query --> API
+    API -- Fetch raw items --> Flipp
+    Flipp -- Raw items --> API
+    API -- Group items --> Grouper
+    Grouper -- Compare pairs --> Matcher
+    Grouper -- Check budget --> Stats
+
+    Matcher -- 1. Check cache --> Cache
+    Matcher -- 2. Embedding sim --> Embed
+    Matcher -- 3. Ambiguous pairs --> Claude
+
+    AlertsUI -- Manage alerts --> API
+    Alerts -- Poll prices --> Flipp
+    Alerts -- Send emails --> Resend
+    API -- Read/Write --> Mongo
+    Alerts -- Read/Write --> Mongo

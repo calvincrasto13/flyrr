@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
-import { ShoppingItem, ShoppingList, StoreComparison, SavingsRecord, SearchRequest } from '../types';
+import { ShoppingItem, ShoppingList, StoreComparison, SavingsRecord, SearchResponse } from '../types';
 import apiService from '../services/api';
 import { useApp } from '../contexts/AppContext';
 
 interface UseGroceryAPIReturn {
-  searchItems: (query: string, postalCode: string) => Promise<ShoppingItem[]>;
+  searchItems: (query: string, postalCode: string) => Promise<SearchResponse>;
   compareStores: (cart: ShoppingItem[]) => Promise<StoreComparison>;
   saveSavings: (record: SavingsRecord) => Promise<void>;
   loadSavingsHistory: () => Promise<void>;
@@ -18,104 +18,112 @@ export const useGroceryAPI = (): UseGroceryAPIReturn => {
   const [error, setError] = useState<string | null>(null);
   const { setSearchResults, setComparison, addSavingsRecord, setSavingsHistory } = useApp();
 
-  // Search for grocery items
-  const searchItems = useCallback(async (query: string, postalCode: string): Promise<ShoppingItem[]> => {
-    if (!query.trim() || !postalCode.trim()) {
-      setError('Please enter both search term and postal code');
-      return [];
-    }
+  // Search for grocery items — returns full SearchResponse including product_groups
+  const searchItems = useCallback(
+    async (query: string, postalCode: string): Promise<SearchResponse> => {
+      if (!query.trim() || !postalCode.trim()) {
+        setError('Please enter both a search term and a postal code');
+        return { items: [], product_groups: [], cross_store_count: 0 };
+      }
 
-    setIsLoading(true);
-    setError(null);
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const searchRequest: SearchRequest = {
-        query: query.trim(),
-        postal_code: postalCode.trim().toUpperCase().replace(/\s/g, ''),
-      };
+      try {
+        const response = await apiService.searchItems({
+          query: query.trim(),
+          postal_code: postalCode.trim().toUpperCase().replace(/\s/g, ''),
+        });
 
-      const results = await apiService.searchItems(searchRequest);
-      setSearchResults(results);
-      return results;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to search items';
-      setError(errorMessage);
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  }, [setSearchResults]);
+        // Store both flat items and grouped results in context
+        setSearchResults(response.items, response.product_groups, response.cross_store_count);
+        return response;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to search items';
+        setError(errorMessage);
+        return { items: [], product_groups: [], cross_store_count: 0 };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [setSearchResults]
+  );
 
   // Compare stores for cart items
-  const compareStores = useCallback(async (cart: ShoppingItem[]): Promise<StoreComparison> => {
-    if (cart.length === 0) {
-      setError('Your cart is empty. Please add items to compare stores.');
-      throw new Error('Cart is empty');
-    }
+  const compareStores = useCallback(
+    async (cart: ShoppingItem[]): Promise<StoreComparison> => {
+      if (cart.length === 0) {
+        setError('Your cart is empty. Please add items to compare stores.');
+        throw new Error('Cart is empty');
+      }
 
-    setIsLoading(true);
-    setError(null);
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const shoppingList: ShoppingList = {
-        id: Date.now().toString(),
-        items: cart,
-        total_amount: cart.reduce((sum, item) => sum + item.current_price * item.quantity, 0),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        completed: false,
-      };
+      try {
+        const shoppingList: ShoppingList = {
+          id: Date.now().toString(),
+          items: cart as any,
+          total_amount: cart.reduce(
+            (sum, item) => sum + item.current_price * (item.quantity ?? 1),
+            0
+          ),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          completed: false,
+        };
 
-      const comparison = await apiService.compareStores(shoppingList);
-      setComparison(comparison);
-      return comparison;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to compare stores';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [setComparison]);
+        const comparison = await apiService.compareStores(shoppingList);
+        setComparison(comparison);
+        return comparison;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to compare stores';
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [setComparison]
+  );
 
-  // Save shopping trip and savings
-  const saveSavings = useCallback(async (record: SavingsRecord): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
+  // Save a completed shopping trip and its savings
+  const saveSavings = useCallback(
+    async (record: SavingsRecord): Promise<void> => {
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const savedRecord = await apiService.saveSavingsRecord(record);
-      addSavingsRecord(savedRecord);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to save savings record';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [addSavingsRecord]);
+      try {
+        const savedRecord = await apiService.saveSavingsRecord(record);
+        addSavingsRecord(savedRecord);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to save savings record';
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [addSavingsRecord]
+  );
 
-  // Load savings history
+  // Load savings history from the backend
   const loadSavingsHistory = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const { records, total_savings } = await apiService.getSavingsHistory();
+      const { records } = await apiService.getSavingsHistory();
       setSavingsHistory(records);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load savings history';
       setError(errorMessage);
-      // Don't throw here - it's okay if we can't load history
     } finally {
       setIsLoading(false);
     }
   }, [setSavingsHistory]);
 
-  // Clear error
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  const clearError = useCallback(() => setError(null), []);
 
   return {
     searchItems,

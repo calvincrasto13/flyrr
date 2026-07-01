@@ -5,6 +5,7 @@ import SearchResultsScreen from './components/screens/SearchResultsScreen';
 import CartScreen from './components/screens/CartScreen';
 import ShoppingListScreen from './components/screens/ShoppingListScreen';
 import SavingsHistoryScreen from './components/screens/SavingsHistoryScreen';
+import PriceAlertsScreen from './components/screens/PriceAlertsScreen';
 import './App.css';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
             <Route path="/cart" element={<CartScreen />} />
             <Route path="/shopping" element={<ShoppingListScreen />} />
             <Route path="/savings" element={<SavingsHistoryScreen />} />
+            <Route path="/alerts" element={<PriceAlertsScreen />} />
           </Routes>
         </div>
       </Router>

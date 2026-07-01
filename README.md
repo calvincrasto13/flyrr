@@ -1,116 +1,96 @@
-# Flyrr 🛒
+# flyrr 🛒
 
-**Smart grocery price comparison + real-time deal alerts for Canadians.**
+A comprehensive Canadian grocery price comparison platform built with React, FastAPI, MongoDB, and Claude 3. Flyrr helps users combat food inflation by searching across multiple retailers, semantically matching identical products, comparing cart totals, and tracking price drops.
 
-Flyrr helps you find the cheapest grocery prices across Canadian stores (Walmart, No Frills, Loblaws, Freshco, and more) using the Flipp API — and now alerts you automatically when watched products drop below your target price.
-
----
+![Architecture Diagram](architecture.png)
 
 ## Features
 
-### Season 1 — Price Comparison
-- Search any grocery product by name + postal code
-- Compare prices across all local stores in real time
-- Build a shopping list and find the single cheapest store for your whole cart
-- Track savings history
+* **Semantic Cross-Store Matching**: Uses a three-layer pipeline (Sentence Transformers + Claude 3 Haiku + SQLite Cache) to automatically group identical products sold under different names across different stores.
+* **Smart Shopping Cart**: Build a cart from grouped products, and Flyrr will calculate the cheapest single store to buy your entire list, plus the theoretical maximum savings if you split your trip.
+* **Price Drop Alerts**: Set target prices for specific items. A background APScheduler task polls prices daily and emails you (via Resend) when your target is hit.
+* **Cost Guards & Analytics**: Built-in budget limits (`MAX_CLAUDE_CALLS_PER_REQUEST`) prevent LLM runaway costs. View runtime stats at `/api/stats`.
+* **Evaluation Harness**: Includes an evaluation script (`eval_matcher.py`) to measure the accuracy, precision, and latency of the semantic matching pipeline against a labelled dataset.
 
-### Season 2 — Real-Time Deal Alerts 🆕
-- **Watchlist**: Add products with a target price threshold
-- **Auto-polling**: Background scheduler checks prices every 30 minutes via APScheduler
-- **Telegram alerts**: Get instant push notifications via Telegram Bot API when a deal is found
-- **Email alerts**: HTML email notifications via SMTP (Gmail / any provider)
-- **Alert history**: Full log of every triggered notification
-- **Mobile UI**: Native watchlist + notification screens built in React Native / Expo
+## Architecture
 
----
+The system is split into two main components:
 
-## Stack
-
-| Layer | Tech |
-|---|---|
-| Mobile frontend | React Native + Expo (TypeScript) |
-| Backend API | FastAPI + Python |
-| Database | MongoDB (Motor async driver) |
-| Price data | Flipp API (backflipp.wishabi.com) |
-| Scheduling | APScheduler 3.x |
-| Notifications | Telegram Bot API + SMTP email |
-| Web scraping | Playwright (extensible) |
-
----
+1. **Frontend (`/web`)**: A Vite + React + TypeScript single-page application. Uses React Context for state management and React Router for navigation.
+2. **Backend (`/backend`)**: A FastAPI Python application.
+   * `server.py`: REST API endpoints and core application setup.
+   * `semantic_matcher.py`: The three-layer LangChain pipeline for product matching.
+   * `product_grouper.py`: Union-find algorithm to group items across $N$ stores in $O(N^2)$ comparisons, guarded by a Claude API budget.
+   * `alerts.py` & `scheduler.py`: Background price polling and email notifications.
+   * `eval_matcher.py`: Evaluation harness for the semantic matcher.
 
 ## Getting Started
 
-### Backend
+### Prerequisites
+
+* Node.js 18+
+* Python 3.10+
+* MongoDB instance (local or Atlas)
+* Anthropic API Key (for Claude 3)
+* Resend API Key (for email alerts)
+
+### Backend Setup
+
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Create a `.env` file based on the provided `.env.example`:
+   ```env
+   MONGO_URL=mongodb://localhost:27017
+   DB_NAME=flyrr
+   ANTHROPIC_API_KEY=your_anthropic_key
+   RESEND_API_KEY=your_resend_key
+   MAX_CLAUDE_CALLS_PER_REQUEST=5
+   ```
+4. Run the server:
+   ```bash
+   uvicorn server:app --reload --port 8000
+   ```
+
+### Frontend Setup
+
+1. Navigate to the web directory:
+   ```bash
+   cd web
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env` file:
+   ```env
+   VITE_API_URL=http://localhost:8000/api
+   ```
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+## Evaluation Harness
+
+To evaluate the semantic matcher against the built-in labelled dataset:
 
 ```bash
 cd backend
-pip install -r requirements.txt
-playwright install chromium
-
-# Copy and fill in your environment variables
-cp .env.example .env
-
-# Start the API server
-uvicorn server:app --reload --port 8001
-
-# In a second terminal — start the deal alert scheduler
-python scheduler.py
+python eval_matcher.py --verbose
 ```
 
-### Frontend
+To run against a custom CSV:
 
 ```bash
-cd frontend
-npm install
-npx expo start
+python eval_matcher.py --csv path/to/pairs.csv --output results.json
 ```
 
----
+## License
 
-## Environment Variables
-
-Create `backend/.env`:
-
-```env
-# MongoDB
-MONGO_URL=mongodb://localhost:27017
-DB_NAME=flyrr
-
-# Telegram (get token from @BotFather)
-TELEGRAM_BOT_TOKEN=your_bot_token_here
-TELEGRAM_CHAT_ID=your_chat_id_here
-
-# Email (Gmail example)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=you@gmail.com
-SMTP_PASS=your_app_password
-FROM_EMAIL=you@gmail.com
-
-# Scheduler interval (default: 30 minutes)
-ALERT_INTERVAL_MINUTES=30
-```
-
----
-
-## Alert API
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/alerts` | Create a new price watch |
-| `GET` | `/api/alerts` | List all alerts |
-| `PATCH` | `/api/alerts/:id` | Update target price / toggle active |
-| `DELETE` | `/api/alerts/:id` | Remove an alert |
-| `POST` | `/api/alerts/check` | Manually trigger a price check |
-| `GET` | `/api/alerts/notifications` | Alert notification history |
-
----
-
-## New Screens (React Native)
-
-- **`/watchlist`** — Manage watched products, see current vs target prices, pause/remove alerts
-- **`/notifications`** — Full history of every triggered deal alert
-
----
-
-Built with ❤️ by Calvin Crasto
+MIT License

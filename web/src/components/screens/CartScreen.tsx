@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trophy, Plus, Minus, Trash2, ShoppingCart } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
@@ -11,43 +11,28 @@ import './CartScreen.css';
 
 const CartScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, comparison, clearCart, isLoading } = useApp();
+  const { cart, comparison, removeFromCart, updateQuantity, clearCart, isLoading } = useApp();
   const { compareStores } = useGroceryAPI();
   const [localLoading, setLocalLoading] = useState(false);
 
   const cartTotal = cart.reduce((sum, item) => sum + item.current_price * item.quantity, 0);
 
-  const handleGoBack = () => {
-    navigate('/');
-  };
+  // Subtotal per store
+  const storeTotals: Record<string, number> = {};
+  for (const item of cart) {
+    storeTotals[item.merchant] = (storeTotals[item.merchant] || 0) + item.current_price * item.quantity;
+  }
 
   const handleRemoveFromCart = (itemId: string) => {
-    const updatedCart = cart.filter(item => item.id !== itemId);
-    clearCart();
-    updatedCart.forEach(item => {
-      // Re-add remaining items to cart
-      for (let i = 0; i < item.quantity; i++) {
-        // This is a workaround - ideally we'd have a better cart management
-      }
-    });
+    removeFromCart(itemId);
   };
 
   const handleUpdateQuantity = (itemId: string, delta: number) => {
-    const item = cart.find(i => i.id === itemId);
-    if (item) {
-      const newQuantity = item.quantity + delta;
-      if (newQuantity <= 0) {
-        handleRemoveFromCart(itemId);
-      } else {
-        // Update quantity logic would go here
-        console.log(`Update quantity for ${itemId} by ${delta}`);
-      }
-    }
+    updateQuantity(itemId, delta);
   };
 
   const handleCompareStores = async () => {
     if (cart.length === 0) return;
-
     setLocalLoading(true);
     try {
       await compareStores(cart);
@@ -58,13 +43,7 @@ const CartScreen: React.FC = () => {
     }
   };
 
-  const handleStartShopping = () => {
-    navigate('/shopping');
-  };
-
-  const formatPrice = (price: number): string => {
-    return `$${price.toFixed(2)}`;
-  };
+  const formatPrice = (price: number): string => `$${price.toFixed(2)}`;
 
   if (isLoading && cart.length === 0) {
     return (
@@ -81,36 +60,19 @@ const CartScreen: React.FC = () => {
       <div className="cart-container">
         {/* Header */}
         <div className="cart-header">
-          <Button
-            onClick={handleGoBack}
-            variant="secondary"
-            size="small"
-            className="back-button"
-          >
+          <Button onClick={() => navigate('/')} variant="secondary" size="small" className="back-button">
             <ArrowLeft size={20} />
           </Button>
           <h1 className="cart-title">Shopping Cart</h1>
           <div className="spacer" />
         </div>
 
-        {/* Cart Content */}
         {cart.length === 0 ? (
           <div className="empty-cart">
-            <div className="empty-icon">
-              <ShoppingCart size={64} color={COLORS.LIGHT_GRAY} />
-            </div>
+            <div className="empty-icon"><ShoppingCart size={64} color={COLORS.LIGHT_GRAY} /></div>
             <h2 className="empty-title">Your cart is empty</h2>
-            <p className="empty-description">
-              Add some items to your cart to get started
-            </p>
-            <Button
-              onClick={handleGoBack}
-              variant="primary"
-              size="medium"
-              className="shop-now-button"
-            >
-              Shop Now
-            </Button>
+            <p className="empty-description">Add items from the search results to get started</p>
+            <Button onClick={() => navigate('/')} variant="primary" size="medium">Shop Now</Button>
           </div>
         ) : (
           <div className="cart-content">
@@ -146,7 +108,6 @@ const CartScreen: React.FC = () => {
                         <Plus size={16} />
                       </Button>
                     </div>
-
                     <Button
                       onClick={() => handleRemoveFromCart(item.id)}
                       variant="danger"
@@ -160,6 +121,19 @@ const CartScreen: React.FC = () => {
               ))}
             </div>
 
+            {/* Subtotals per store */}
+            {Object.keys(storeTotals).length > 1 && (
+              <Card className="store-subtotals-card">
+                <h3 className="subtotals-title">Subtotal by Store</h3>
+                {Object.entries(storeTotals).map(([store, total]) => (
+                  <div key={store} className="subtotal-row">
+                    <span className="subtotal-store">{store}</span>
+                    <span className="subtotal-amount">{formatPrice(total)}</span>
+                  </div>
+                ))}
+              </Card>
+            )}
+
             {/* Cart Total */}
             <Card className="total-card">
               <div className="total-row">
@@ -168,11 +142,10 @@ const CartScreen: React.FC = () => {
               </div>
             </Card>
 
-            {/* Store Comparison */}
+            {/* Store Comparison Result */}
             {comparison && (
               <Card className="comparison-card">
                 <h2 className="comparison-title">Best Store Comparison</h2>
-
                 <div className="best-store-highlight">
                   <Trophy size={32} color="#FFD700" />
                   <div className="best-store-info">
@@ -180,18 +153,20 @@ const CartScreen: React.FC = () => {
                     <p className="best-store-price">{formatPrice(comparison.best_store_total)}</p>
                   </div>
                 </div>
-
-                <div className="savings-text">
-                  You could save {formatPrice(comparison.savings)} shopping here!
-                </div>
-
+                {comparison.savings > 0 && (
+                  <div className="savings-text">
+                    You could save {formatPrice(comparison.savings)} shopping here vs. the most expensive option!
+                  </div>
+                )}
                 <div className="store-list">
-                  {Object.entries(comparison.store_totals).map(([store, total]) => (
-                    <div key={store} className="store-item">
-                      <span className="store-name">{store}</span>
-                      <span className="store-price">{formatPrice(total as number)}</span>
-                    </div>
-                  ))}
+                  {Object.entries(comparison.store_totals)
+                    .sort(([, a], [, b]) => (a as number) - (b as number))
+                    .map(([store, total]) => (
+                      <div key={store} className={`store-item ${store === comparison.best_store ? 'store-item--best' : ''}`}>
+                        <span className="store-name">{store}</span>
+                        <span className="store-price">{formatPrice(total as number)}</span>
+                      </div>
+                    ))}
                 </div>
               </Card>
             )}
@@ -208,10 +183,9 @@ const CartScreen: React.FC = () => {
               >
                 Compare Stores
               </Button>
-
               {comparison && (
                 <Button
-                  onClick={handleStartShopping}
+                  onClick={() => navigate('/shopping')}
                   variant="secondary"
                   size="large"
                   className="shopping-button"
@@ -220,11 +194,19 @@ const CartScreen: React.FC = () => {
                   Let's Go Shopping!
                 </Button>
               )}
+              <Button
+                onClick={clearCart}
+                variant="danger"
+                size="large"
+                className="clear-button"
+              >
+                <Trash2 size={20} />
+                Clear Cart
+              </Button>
             </div>
           </div>
         )}
 
-        {/* Loading Overlay */}
         {(isLoading || localLoading) && cart.length > 0 && (
           <div className="loading-overlay">
             <LoadingSpinner size="medium" text="Processing..." />

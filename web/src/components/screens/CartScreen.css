@@ -346,3 +346,54 @@
     height: 36px;
   }
 }
+
+/* Store subtotals */
+.store-subtotals-card {
+  margin-bottom: 0;
+}
+
+.subtotals-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 10px 0;
+}
+
+.subtotal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+}
+
+.subtotal-row:last-child {
+  border-bottom: none;
+}
+
+.subtotal-store {
+  color: #555;
+}
+
+.subtotal-amount {
+  font-weight: 600;
+  color: #222;
+}
+
+/* Best store highlight in comparison */
+.store-item--best {
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+}
+
+.store-item--best .store-name,
+.store-item--best .store-price {
+  color: #2e7d32;
+  font-weight: 700;
+}
+
+/* Clear cart button */
+.clear-button {
+  width: 100%;
+}

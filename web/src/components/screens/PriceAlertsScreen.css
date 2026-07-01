@@ -1,0 +1,235 @@
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.alerts-screen {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.alerts-container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.alerts-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alerts-title {
+  flex: 1;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #222;
+  margin: 0;
+  text-align: center;
+}
+
+/* ── Feedback banners ────────────────────────────────────────────────────── */
+.alerts-error {
+  background: #ffebee;
+  color: #c62828;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+}
+
+.alerts-success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+}
+
+.alerts-check-result {
+  background: #e3f2fd;
+  color: #1565c0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+}
+
+/* ── Create alert form ───────────────────────────────────────────────────── */
+.create-alert-card {
+  border-radius: 12px;
+}
+
+.create-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 16px 0;
+}
+
+.create-alert-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Alert list ──────────────────────────────────────────────────────────── */
+.alerts-list-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 10px 0;
+}
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Alert card ──────────────────────────────────────────────────────────── */
+.alert-card {
+  border-radius: 12px;
+  overflow: hidden;
+  transition: opacity 0.2s;
+}
+
+.alert-card--inactive {
+  opacity: 0.55;
+}
+
+.alert-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.alert-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-product {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 4px 0;
+}
+
+.alert-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #777;
+}
+
+.alert-price-col {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.alert-target {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.alert-current {
+  font-size: 0.85rem;
+  color: #555;
+  margin-top: 2px;
+}
+
+.alert-current.price-hit {
+  color: #2e7d32;
+  font-weight: 700;
+}
+
+.at-merchant {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.alert-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 10px;
+  gap: 12px;
+}
+
+.alert-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.72rem;
+  color: #999;
+}
+
+.triggered-at {
+  color: #2e7d32;
+}
+
+.alert-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.toggle-alert-btn,
+.delete-alert-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.toggle-alert-btn.active {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.toggle-alert-btn.inactive {
+  background: #f5f5f5;
+  color: #999;
+}
+
+.toggle-alert-btn:hover {
+  filter: brightness(0.95);
+}
+
+.delete-alert-btn {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.delete-alert-btn:hover {
+  background: #ffcdd2;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.empty-alerts {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-alerts-icon {
+  margin-bottom: 12px;
+}
+
+.empty-alerts-text {
+  color: #888;
+  font-size: 0.9rem;
+}

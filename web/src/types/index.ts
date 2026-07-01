@@ -1,10 +1,11 @@
-// Core data types for Smart Grocery Saver application
+// Core data types for flyrr — Canadian Grocery Price Comparison
 
 export interface ShoppingItem {
   id: string;
   global_id: string;
   name: string;
   merchant: string;
+  merchant_id?: number;
   current_price: number;
   image_url?: string;
   merchant_logo?: string;
@@ -43,18 +44,75 @@ export interface SearchRequest {
   postal_code: string;
 }
 
-export interface SearchResult {
-  items: ShoppingItem[];
-  total_results: number;
-  search_time: string;
+// ── Product Group types (from /api/search product_groups) ─────────────────────
+
+export interface StoreEntry {
+  merchant: string;
+  name: string;
+  price: number;
+  image_url?: string;
+  merchant_logo?: string;
+  global_id?: string;
+  match_confidence?: number;
 }
+
+export type MatchMethod = 'embedding_high' | 'embedding_low' | 'claude' | 'single_store' | 'embedding';
+
+export interface ProductGroup {
+  canonical_name: string;
+  stores: StoreEntry[];
+  best_price: number;
+  best_merchant: string;
+  worst_price: number;
+  savings_vs_worst: number;
+  match_method: MatchMethod;
+  store_count: number;
+}
+
+export interface SearchResponse {
+  items: ShoppingItem[];
+  product_groups: ProductGroup[];
+  cross_store_count: number;
+}
+
+// ── Price Alert types ──────────────────────────────────────────────────────────
+
+export interface PriceAlert {
+  id: string;
+  product_name: string;
+  postal_code: string;
+  target_price: number;
+  notify_email?: string;
+  active: boolean;
+  created_at: string;
+  last_seen_price?: number;
+  last_checked_at?: string;
+  last_triggered_at?: string;
+  best_merchant?: string;
+}
+
+export interface PriceAlertCreate {
+  product_name: string;
+  postal_code: string;
+  target_price: number;
+  notify_email?: string;
+}
+
+export interface PriceAlertUpdate {
+  target_price?: number;
+  notify_email?: string;
+  active?: boolean;
+}
+
+// ── Store Comparison ───────────────────────────────────────────────────────────
 
 export interface StoreComparison {
   best_store: string;
   best_store_total: number;
   savings: number;
   store_totals: { [store: string]: number };
-  items: CartItem[];
+  theoretical_minimum?: number;
+  items?: CartItem[];
 }
 
 export interface LocationInfo {
@@ -75,11 +133,15 @@ export interface APIResponse<T = any> {
   total_savings?: number;
 }
 
+// ── App Context ────────────────────────────────────────────────────────────────
+
 export interface AppContextType {
   cart: CartItem[];
   postalCode: string;
   locationInfo: LocationInfo | null;
   searchResults: ShoppingItem[];
+  productGroups: ProductGroup[];
+  crossStoreCount: number;
   shoppingLists: ShoppingList[];
   savingsHistory: SavingsRecord[];
   comparison: StoreComparison | null;
@@ -93,10 +155,11 @@ export interface AppContextType {
   clearCart: () => void;
   setPostalCode: (postalCode: string) => void;
   setLocationInfo: (location: LocationInfo) => void;
-  setSearchResults: (results: ShoppingItem[]) => void;
+  setSearchResults: (results: ShoppingItem[], groups?: ProductGroup[], crossStoreCount?: number) => void;
   setComparison: (comparison: StoreComparison | null) => void;
   addShoppingList: (list: ShoppingList) => void;
   addSavingsRecord: (record: SavingsRecord) => void;
+  setSavingsHistory: (records: SavingsRecord[]) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
 }
