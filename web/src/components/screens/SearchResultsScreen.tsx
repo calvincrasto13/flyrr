@@ -3,21 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Trophy,
-  Plus,
-  Minus,
   Store,
-  Image as ImageIcon,
   Search,
-  Tag,
   Zap,
   Brain,
   ShoppingCart,
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
-import { ProductGroup, StoreEntry } from '../../types';
+import { ProductGroup, StoreEntry, ShoppingItem } from '../../types';
 import { COLORS } from '../../utils/constants';
 import Button from '../common/Button';
 import Card from '../common/Card';
+import Badge from '../common/Badge';
+import QuantityStepper from '../common/QuantityStepper';
+import EmptyState from '../common/EmptyState';
+import ProductCard from '../common/ProductCard';
+import Skeleton from '../common/Skeleton';
 import LoadingSpinner from '../common/LoadingSpinner';
 import './SearchResultsScreen.css';
 
@@ -49,19 +50,12 @@ const MatchMethodBadge: React.FC<{ method: string }> = ({ method }) => {
 interface StoreRowProps {
   store: StoreEntry;
   isBest: boolean;
-  groupId: string;
   onAdd: (store: StoreEntry) => void;
   onUpdate: (store: StoreEntry, delta: number) => void;
   quantityInCart: number;
 }
 
-const StoreRow: React.FC<StoreRowProps> = ({
-  store,
-  isBest,
-  onAdd,
-  onUpdate,
-  quantityInCart,
-}) => (
+const StoreRow: React.FC<StoreRowProps> = ({ store, isBest, onAdd, onUpdate, quantityInCart }) => (
   <div className={`store-row ${isBest ? 'store-row--best' : ''}`}>
     <div className="store-row-info">
       <div className="store-row-merchant">
@@ -73,33 +67,29 @@ const StoreRow: React.FC<StoreRowProps> = ({
         <span className="store-row-name">{store.merchant}</span>
         {isBest && (
           <span className="best-price-tag">
-            <Trophy size={12} color="#FFD700" /> Best
+            <Trophy size={12} color="#f5b301" /> Best
           </span>
         )}
       </div>
       <div className="store-row-product-name">{store.name}</div>
       {store.match_confidence !== undefined && (
-        <div className="match-confidence">
-          {Math.round(store.match_confidence * 100)}% match
-        </div>
+        <div className="match-confidence">{Math.round(store.match_confidence * 100)}% match</div>
       )}
     </div>
 
     <div className="store-row-right">
       <span className="store-row-price">${store.price.toFixed(2)}</span>
       {quantityInCart > 0 ? (
-        <div className="quantity-controls-sm">
-          <button className="qty-btn" onClick={() => onUpdate(store, -1)}>
-            <Minus size={13} />
-          </button>
-          <span className="qty-num">{quantityInCart}</span>
-          <button className="qty-btn" onClick={() => onUpdate(store, 1)}>
-            <Plus size={13} />
-          </button>
-        </div>
+        <QuantityStepper
+          value={quantityInCart}
+          size="small"
+          onIncrement={() => onUpdate(store, 1)}
+          onDecrement={() => onUpdate(store, -1)}
+          label={store.name}
+        />
       ) : (
         <button className="add-btn-sm" onClick={() => onAdd(store)}>
-          <Plus size={13} /> Add
+          Add
         </button>
       )}
     </div>
@@ -161,9 +151,9 @@ const SearchResultsScreen: React.FC = () => {
     }
   };
 
-  const handleAddFlatItem = (item: any) => addToCart(item, 1);
+  const handleAddFlatItem = (item: ShoppingItem) => addToCart(item, 1);
 
-  const handleUpdateFlatItem = (item: any, delta: number) => {
+  const handleUpdateFlatItem = (item: ShoppingItem, delta: number) => {
     const cartItem = cart.find(i => i.global_id === item.global_id);
     if (cartItem) {
       const newQty = cartItem.quantity + delta;
@@ -178,7 +168,16 @@ const SearchResultsScreen: React.FC = () => {
     return (
       <div className="search-results-screen">
         <div className="search-results-container">
-          <LoadingSpinner size="large" text="Searching and matching products across stores..." />
+          <p className="search-loading-text">Searching and matching products across stores…</p>
+          <div className="results-grid">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton-card">
+                <Skeleton height={120} radius="var(--radius-lg)" />
+                <Skeleton height={14} width="80%" />
+                <Skeleton height={14} width="50%" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -230,124 +229,97 @@ const SearchResultsScreen: React.FC = () => {
 
         {/* Empty state */}
         {!hasGroups && !hasResults && (
-          <div className="empty-state">
-            <div className="empty-icon"><Search size={64} color={COLORS.LIGHT_GRAY} /></div>
-            <h2 className="empty-title">No items found</h2>
-            <p className="empty-description">
-              Try adjusting your search terms or checking your postal code
-            </p>
-            <Button onClick={() => navigate('/')} variant="primary" size="medium">
-              Try Again
-            </Button>
-          </div>
+          <EmptyState
+            icon={Search}
+            title="No items found"
+            description="Try adjusting your search terms or checking your postal code"
+            action={{ label: 'Try Again', onClick: () => navigate('/') }}
+          />
         )}
 
         {/* Product Group Cards */}
         {hasGroups && viewMode === 'groups' && (
           <div className="results-list">
-            {productGroups.map((group: ProductGroup, idx: number) => (
-              <Card key={`${group.canonical_name}-${idx}`} className="product-group-card">
-                <div className="group-header">
-                  <div className="group-title-row">
-                    <h3 className="group-canonical-name">{group.canonical_name}</h3>
-                    <MatchMethodBadge method={group.match_method} />
-                  </div>
+            {productGroups.map((group: ProductGroup, idx: number) => {
+              const percentOff =
+                group.savings_vs_worst > 0 && group.worst_price > 0
+                  ? Math.round((group.savings_vs_worst / group.worst_price) * 100)
+                  : 0;
 
-                  {group.savings_vs_worst > 0 && (
-                    <div className="savings-badge">
-                      <Tag size={14} />
-                      Save ${group.savings_vs_worst.toFixed(2)}
+              return (
+                <Card
+                  key={`${group.canonical_name}-${idx}`}
+                  className="product-group-card fyr-rise"
+                  style={{ '--i': idx } as React.CSSProperties}
+                >
+                  {percentOff > 0 && (
+                    <div className="group-discount-badge">
+                      <Badge variant="discount">-{percentOff}%</Badge>
                     </div>
                   )}
-                </div>
 
-                {/* Store image (from best store) */}
-                {group.stores[0]?.image_url && (
-                  <div className="group-image-container">
-                    <img
-                      src={group.stores[0].image_url}
-                      alt={group.canonical_name}
-                      className="group-image"
-                    />
-                  </div>
-                )}
-
-                {/* Store rows — sorted cheapest first by the backend */}
-                <div className="store-rows">
-                  {group.stores.map((store, sIdx) => (
-                    <StoreRow
-                      key={`${store.merchant}-${sIdx}`}
-                      store={store}
-                      isBest={store.merchant === group.best_merchant && store.price === group.best_price}
-                      groupId={`${group.canonical_name}-${idx}`}
-                      onAdd={handleAddStoreEntry}
-                      onUpdate={handleUpdateStoreEntry}
-                      quantityInCart={getCartQuantity(
-                        store.global_id || `${store.merchant}-${store.name}`,
-                        store.merchant
-                      )}
-                    />
-                  ))}
-                </div>
-
-                {group.store_count === 1 && (
-                  <div className="single-store-note">Only available at {group.best_merchant}</div>
-                )}
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Flat list fallback */}
-        {hasResults && (!hasGroups || viewMode === 'flat') && (
-          <div className="results-list">
-            {searchResults.map((item, idx) => {
-              const qty = getCartQuantityByGlobalId(item.global_id);
-              return (
-                <Card key={item.global_id || idx} className="product-card">
-                  <div className="product-content">
-                    <div className="product-image-container">
-                      {item.image_url ? (
-                        <img src={item.image_url} alt={item.name} className="product-image" />
-                      ) : (
-                        <div className="product-image-placeholder">
-                          <ImageIcon size={40} color={COLORS.LIGHT_GRAY} />
-                        </div>
-                      )}
+                  <div className="group-header">
+                    <div className="group-title-row">
+                      <h3 className="group-canonical-name">{group.canonical_name}</h3>
+                      <MatchMethodBadge method={group.match_method} />
                     </div>
-                    <div className="product-details">
-                      <h3 className="product-name">{item.name}</h3>
-                      <div className="product-store">
-                        {item.merchant_logo ? (
-                          <img src={item.merchant_logo} alt={item.merchant} className="store-logo" />
-                        ) : (
-                          <Store size={16} color={COLORS.GRAY} />
-                        )}
-                        <span className="store-name">{item.merchant}</span>
-                      </div>
-                      <span className="product-price">${item.current_price.toFixed(2)}</span>
-                    </div>
-                  </div>
-                  <div className="cart-controls">
-                    {qty > 0 ? (
-                      <div className="quantity-controls">
-                        <Button onClick={() => handleUpdateFlatItem(item, -1)} variant="secondary" size="small">
-                          <Minus size={16} />
-                        </Button>
-                        <span className="quantity-number">{qty}</span>
-                        <Button onClick={() => handleUpdateFlatItem(item, 1)} variant="secondary" size="small">
-                          <Plus size={16} />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button onClick={() => handleAddFlatItem(item)} variant="primary" size="medium" className="add-button">
-                        <Plus size={16} /> Add to Cart
-                      </Button>
+
+                    {group.savings_vs_worst > 0 && (
+                      <Badge variant="success">Save ${group.savings_vs_worst.toFixed(2)}</Badge>
                     )}
                   </div>
+
+                  {/* Store image (from best store) */}
+                  {group.stores[0]?.image_url && (
+                    <div className="group-image-container">
+                      <img src={group.stores[0].image_url} alt={group.canonical_name} className="group-image" />
+                    </div>
+                  )}
+
+                  {/* Store rows — sorted cheapest first by the backend */}
+                  <div className="store-rows">
+                    {group.stores.map((store, sIdx) => (
+                      <StoreRow
+                        key={`${store.merchant}-${sIdx}`}
+                        store={store}
+                        isBest={store.merchant === group.best_merchant && store.price === group.best_price}
+                        onAdd={handleAddStoreEntry}
+                        onUpdate={handleUpdateStoreEntry}
+                        quantityInCart={getCartQuantity(
+                          store.global_id || `${store.merchant}-${store.name}`,
+                          store.merchant
+                        )}
+                      />
+                    ))}
+                  </div>
+
+                  {group.store_count === 1 && (
+                    <div className="single-store-note">Only available at {group.best_merchant}</div>
+                  )}
                 </Card>
               );
             })}
+          </div>
+        )}
+
+        {/* Flat list */}
+        {hasResults && (!hasGroups || viewMode === 'flat') && (
+          <div className="results-grid">
+            {searchResults.map((item, idx) => (
+              <div
+                key={item.global_id || idx}
+                className="fyr-rise"
+                style={{ '--i': idx } as React.CSSProperties}
+              >
+                <ProductCard
+                  product={item}
+                  cartQuantity={getCartQuantityByGlobalId(item.global_id)}
+                  onAdd={handleAddFlatItem}
+                  onIncrement={(p) => handleUpdateFlatItem(p, 1)}
+                  onDecrement={(p) => handleUpdateFlatItem(p, -1)}
+                />
+              </div>
+            ))}
           </div>
         )}
 

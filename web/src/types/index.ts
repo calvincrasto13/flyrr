@@ -197,6 +197,9 @@ export interface CardProps extends ComponentProps {
   image?: string;
   onClick?: () => void;
   hoverable?: boolean;
+  /** Escape hatch for callers that need inline styling, e.g. CSS custom
+   * properties driving the fyr-rise stagger-entrance animation delay. */
+  style?: React.CSSProperties;
 }
 
 export interface LoadingSpinnerProps extends ComponentProps {

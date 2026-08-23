@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, TrendingUp, MapPin, Search, Bell } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Bell, Search } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useLocation } from '../../hooks/useLocation';
 import { useGroceryAPI } from '../../hooks/useGroceryAPI';
-import { COLORS } from '../../utils/constants';
-import Button from '../common/Button';
-import Input from '../common/Input';
+import apiService from '../../services/api';
 import Card from '../common/Card';
+import Input from '../common/Input';
+import Button from '../common/Button';
+import PromoBanner from '../common/PromoBanner';
+import StatTile from '../common/StatTile';
 import LoadingSpinner from '../common/LoadingSpinner';
 import './HomeScreen.css';
 
@@ -18,8 +20,26 @@ const HomeScreen: React.FC = () => {
   const { searchItems } = useGroceryAPI();
   const [searchQuery, setSearchQuery] = useState('');
   const [locationLoading, setLocationLoading] = useState(false);
+  const [activeAlertsCount, setActiveAlertsCount] = useState<number | null>(null);
 
   const totalSavings = savingsHistory.reduce((sum, r) => sum + (r.savings || 0), 0);
+
+  // Lightweight fetch, mirrors the pattern PriceAlertsScreen already uses —
+  // kept as local state rather than global AppContext state to stay minimal.
+  useEffect(() => {
+    let cancelled = false;
+    apiService
+      .getAlerts()
+      .then((alerts) => {
+        if (!cancelled) setActiveAlertsCount(alerts.filter((a) => a.active).length);
+      })
+      .catch(() => {
+        if (!cancelled) setActiveAlertsCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleGetCurrentLocation = async () => {
     setLocationLoading(true);
@@ -55,43 +75,16 @@ const HomeScreen: React.FC = () => {
   return (
     <div className="home-screen">
       <div className="home-container">
-        {/* Header */}
-        <div className="home-header">
-          <div className="header-icon">
-            <ShoppingCart size={48} color={COLORS.PRIMARY} />
-          </div>
-          <h1 className="home-title">flyrr</h1>
-          <p className="home-subtitle">Canadian grocery price comparison</p>
-        </div>
+        <PromoBanner
+          title="flyrr"
+          subtitle="Find the best grocery deals near you"
+          postalCode={postalCode}
+          onPostalCodeChange={setPostalCode}
+          onUseLocation={handleGetCurrentLocation}
+          locationLoading={locationLoading}
+        />
 
         {error && <div className="error-message"><span>{error}</span></div>}
-
-        {/* Location Card */}
-        <Card className="location-card">
-          <h2 className="card-title">Your Location</h2>
-          <div className="location-input-container">
-            <Input
-              value={postalCode}
-              onChange={setPostalCode}
-              placeholder="Postal Code (e.g., L4W 3H8)"
-              label="Postal Code"
-              maxLength={10}
-              disabled={locationLoading}
-              className="location-input"
-            />
-            <Button
-              onClick={handleGetCurrentLocation}
-              disabled={locationLoading}
-              loading={locationLoading}
-              variant="secondary"
-              size="medium"
-              className="location-button"
-            >
-              <MapPin size={20} />
-              {locationLoading ? '' : 'Use My Location'}
-            </Button>
-          </div>
-        </Card>
 
         {/* Search Card */}
         <Card className="search-card">
@@ -117,38 +110,30 @@ const HomeScreen: React.FC = () => {
           </Button>
         </Card>
 
-        {/* Stats */}
-        <div className="stats-container">
-          <Card className="stat-card">
-            <div className="stat-icon"><ShoppingCart size={32} color={COLORS.PRIMARY} /></div>
-            <div className="stat-content">
-              <div className="stat-number">{cart.length}</div>
-              <div className="stat-label">Items in Cart</div>
-            </div>
-          </Card>
-          <Card className="stat-card">
-            <div className="stat-icon"><TrendingUp size={32} color={COLORS.SECONDARY} /></div>
-            <div className="stat-content">
-              <div className="stat-number">${totalSavings.toFixed(2)}</div>
-              <div className="stat-label">Total Saved</div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Navigation */}
-        <div className="action-buttons">
-          <Button onClick={() => navigate('/cart')} variant="secondary" size="large" className="action-button">
-            <ShoppingCart size={20} />
-            View Cart ({cart.length})
-          </Button>
-          <Button onClick={() => navigate('/savings')} variant="secondary" size="large" className="action-button">
-            <TrendingUp size={20} />
-            Savings History
-          </Button>
-          <Button onClick={() => navigate('/alerts')} variant="secondary" size="large" className="action-button">
-            <Bell size={20} />
-            Price Alerts
-          </Button>
+        {/* Quick Stats */}
+        <div className="quick-stats-row">
+          <StatTile
+            icon={ShoppingCart}
+            label="Items in Cart"
+            value={cart.length}
+            tone="mint"
+            onClick={() => navigate('/cart')}
+          />
+          <StatTile
+            icon={TrendingUp}
+            label="Total Saved"
+            value={`$${totalSavings.toFixed(2)}`}
+            tone="blush"
+            onClick={() => navigate('/savings')}
+          />
+          <StatTile
+            icon={Bell}
+            label="Active Alerts"
+            value={activeAlertsCount ?? 0}
+            loading={activeAlertsCount === null}
+            tone="warning"
+            onClick={() => navigate('/alerts')}
+          />
         </div>
 
         {(isLoading || locationLoading) && (

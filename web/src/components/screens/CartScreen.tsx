@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trophy, Plus, Minus, Trash2, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Trophy, Trash2, ShoppingCart } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useGroceryAPI } from '../../hooks/useGroceryAPI';
-import { COLORS } from '../../utils/constants';
 import Button from '../common/Button';
 import Card from '../common/Card';
+import QuantityStepper from '../common/QuantityStepper';
+import EmptyState from '../common/EmptyState';
 import LoadingSpinner from '../common/LoadingSpinner';
 import './CartScreen.css';
 
@@ -23,12 +24,13 @@ const CartScreen: React.FC = () => {
     storeTotals[item.merchant] = (storeTotals[item.merchant] || 0) + item.current_price * item.quantity;
   }
 
-  const handleRemoveFromCart = (itemId: string) => {
-    removeFromCart(itemId);
-  };
-
   const handleUpdateQuantity = (itemId: string, delta: number) => {
-    updateQuantity(itemId, delta);
+    const item = cart.find((i) => i.id === itemId);
+    if (item && item.quantity + delta <= 0) {
+      removeFromCart(itemId);
+    } else {
+      updateQuantity(itemId, delta);
+    }
   };
 
   const handleCompareStores = async () => {
@@ -68,18 +70,22 @@ const CartScreen: React.FC = () => {
         </div>
 
         {cart.length === 0 ? (
-          <div className="empty-cart">
-            <div className="empty-icon"><ShoppingCart size={64} color={COLORS.LIGHT_GRAY} /></div>
-            <h2 className="empty-title">Your cart is empty</h2>
-            <p className="empty-description">Add items from the search results to get started</p>
-            <Button onClick={() => navigate('/')} variant="primary" size="medium">Shop Now</Button>
-          </div>
+          <EmptyState
+            icon={ShoppingCart}
+            title="Your cart is empty"
+            description="Add items from the search results to get started"
+            action={{ label: 'Shop Now', onClick: () => navigate('/') }}
+          />
         ) : (
           <div className="cart-content">
             {/* Cart Items */}
             <div className="cart-items">
-              {cart.map((item) => (
-                <Card key={item.id} className="cart-item">
+              {cart.map((item, idx) => (
+                <Card
+                  key={item.id}
+                  className="cart-item fyr-rise"
+                  style={{ '--i': idx } as React.CSSProperties}
+                >
                   <div className="item-info">
                     <h3 className="item-name">{item.name}</h3>
                     <p className="item-store">{item.merchant}</p>
@@ -89,27 +95,14 @@ const CartScreen: React.FC = () => {
                   </div>
 
                   <div className="item-actions">
-                    <div className="quantity-controls">
-                      <Button
-                        onClick={() => handleUpdateQuantity(item.id, -1)}
-                        variant="secondary"
-                        size="small"
-                        className="quantity-button"
-                      >
-                        <Minus size={16} />
-                      </Button>
-                      <span className="quantity">{item.quantity}</span>
-                      <Button
-                        onClick={() => handleUpdateQuantity(item.id, 1)}
-                        variant="secondary"
-                        size="small"
-                        className="quantity-button"
-                      >
-                        <Plus size={16} />
-                      </Button>
-                    </div>
+                    <QuantityStepper
+                      value={item.quantity}
+                      onIncrement={() => handleUpdateQuantity(item.id, 1)}
+                      onDecrement={() => handleUpdateQuantity(item.id, -1)}
+                      label={item.name}
+                    />
                     <Button
-                      onClick={() => handleRemoveFromCart(item.id)}
+                      onClick={() => removeFromCart(item.id)}
                       variant="danger"
                       size="small"
                       className="remove-button"
@@ -147,7 +140,7 @@ const CartScreen: React.FC = () => {
               <Card className="comparison-card">
                 <h2 className="comparison-title">Best Store Comparison</h2>
                 <div className="best-store-highlight">
-                  <Trophy size={32} color="#FFD700" />
+                  <Trophy size={32} color="#f5b301" />
                   <div className="best-store-info">
                     <h3 className="best-store-name">{comparison.best_store}</h3>
                     <p className="best-store-price">{formatPrice(comparison.best_store_total)}</p>
@@ -194,15 +187,10 @@ const CartScreen: React.FC = () => {
                   Let's Go Shopping!
                 </Button>
               )}
-              <Button
-                onClick={clearCart}
-                variant="danger"
-                size="large"
-                className="clear-button"
-              >
-                <Trash2 size={20} />
+              <button className="clear-link" onClick={clearCart}>
+                <Trash2 size={14} />
                 Clear Cart
-              </Button>
+              </button>
             </div>
           </div>
         )}

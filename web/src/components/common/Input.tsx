@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { InputProps } from '../../types';
 import './Input.css';
 
@@ -15,6 +15,8 @@ const Input: React.FC<InputProps> = ({
   onKeyPress,
   className = '',
 }) => {
+  const errorId = useId();
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
   };
@@ -44,10 +46,10 @@ const Input: React.FC<InputProps> = ({
         maxLength={maxLength}
         className={classes}
         aria-invalid={!!error}
-        aria-describedby={error ? `${name}-error` : undefined}
+        aria-describedby={error ? errorId : undefined}
       />
       {error && (
-        <span id={`${name}-error`} className="input-error-text">
+        <span id={errorId} className="input-error-text">
           {error}
         </span>
       )}

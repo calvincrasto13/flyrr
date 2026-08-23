@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bell, BellOff, Trash2, Plus, RefreshCw, CheckCircle } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { PriceAlert, PriceAlertCreate } from '../../types';
-import { COLORS } from '../../utils/constants';
 import apiService from '../../services/api';
 import Button from '../common/Button';
 import Card from '../common/Card';
 import Input from '../common/Input';
+import Badge from '../common/Badge';
+import EmptyState from '../common/EmptyState';
 import LoadingSpinner from '../common/LoadingSpinner';
 import './PriceAlertsScreen.css';
 
@@ -212,15 +213,18 @@ const PriceAlertsScreen: React.FC = () => {
         {isLoading && alerts.length === 0 ? (
           <LoadingSpinner size="large" text="Loading alerts..." />
         ) : alerts.length === 0 ? (
-          <Card className="empty-alerts">
-            <div className="empty-alerts-icon"><Bell size={48} color={COLORS.LIGHT_GRAY} /></div>
-            <p className="empty-alerts-text">No price alerts yet. Create one above!</p>
-          </Card>
+          <EmptyState icon={Bell} title="No price alerts yet" description="Create one above to get notified on a price drop" />
         ) : (
           <div className="alerts-list">
             <h2 className="alerts-list-title">Active Alerts ({alerts.filter(a => a.active).length})</h2>
-            {alerts.map(alert => (
-              <Card key={alert.id} className={`alert-card ${!alert.active ? 'alert-card--inactive' : ''}`}>
+            {alerts.map((alert, idx) => {
+              const targetHit = alert.last_seen_price != null && alert.last_seen_price <= alert.target_price;
+              return (
+              <Card
+                key={alert.id}
+                className={`alert-card fyr-rise ${!alert.active ? 'alert-card--inactive' : ''}`}
+                style={{ '--i': idx } as React.CSSProperties}
+              >
                 <div className="alert-top">
                   <div className="alert-info">
                     <h3 className="alert-product">{alert.product_name}</h3>
@@ -230,11 +234,16 @@ const PriceAlertsScreen: React.FC = () => {
                         <span className="alert-email">{alert.notify_email}</span>
                       )}
                     </div>
+                    {targetHit && (
+                      <Badge variant="success" pulse className="target-hit-badge">
+                        Target hit!
+                      </Badge>
+                    )}
                   </div>
                   <div className="alert-price-col">
                     <div className="alert-target">Target: <strong>${alert.target_price.toFixed(2)}</strong></div>
                     {alert.last_seen_price != null && (
-                      <div className={`alert-current ${alert.last_seen_price <= alert.target_price ? 'price-hit' : ''}`}>
+                      <div className={`alert-current ${targetHit ? 'price-hit' : ''}`}>
                         Now: ${alert.last_seen_price.toFixed(2)}
                         {alert.best_merchant && <span className="at-merchant"> @ {alert.best_merchant}</span>}
                       </div>
@@ -267,7 +276,8 @@ const PriceAlertsScreen: React.FC = () => {
                   </div>
                 </div>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

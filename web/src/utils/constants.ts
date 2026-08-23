@@ -10,19 +10,23 @@ export const APP_ROUTES = {
   SAVINGS: '/savings',
 } as const;
 
+// Kept in sync with the CSS custom properties in src/styles/tokens.css.
+// lucide-react icons take a JS color string (not a CSS var), so this object
+// stays as the JS-side mirror of the same palette; tokens.css remains the
+// source of truth for anything styled in CSS.
 export const COLORS = {
-  PRIMARY: '#4CAF50',
-  SECONDARY: '#FF9800',
-  DANGER: '#f44336',
-  SUCCESS: '#4CAF50',
-  WARNING: '#FF9800',
-  INFO: '#2196F3',
-  LIGHT: '#f5f5f5',
+  PRIMARY: '#34a853',
+  SECONDARY: '#ff9f43',
+  DANGER: '#f4463c',
+  SUCCESS: '#34a853',
+  WARNING: '#ff9f43',
+  INFO: '#3b82f6',
+  LIGHT: '#fbfaf8',
   WHITE: '#ffffff',
-  BLACK: '#333333',
-  GRAY: '#666666',
-  LIGHT_GRAY: '#999999',
-  BORDER: '#e0e0e0',
+  BLACK: '#1f2333',
+  GRAY: '#6b7280',
+  LIGHT_GRAY: '#9ca3af',
+  BORDER: '#eef0f2',
 } as const;
 
 export const BREAKPOINTS = {

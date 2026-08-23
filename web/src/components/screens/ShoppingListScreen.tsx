@@ -6,6 +6,7 @@ import { useGroceryAPI } from '../../hooks/useGroceryAPI';
 import { COLORS } from '../../utils/constants';
 import Button from '../common/Button';
 import Card from '../common/Card';
+import EmptyState from '../common/EmptyState';
 import LoadingSpinner from '../common/LoadingSpinner';
 import './ShoppingListScreen.css';
 
@@ -111,27 +112,24 @@ const ShoppingListScreen: React.FC = () => {
 
         {/* Shopping List */}
         {cart.length === 0 ? (
-          <Card className="empty-list">
-            <div className="empty-icon">
-              <ShoppingCart size={64} color={COLORS.LIGHT_GRAY} />
-            </div>
-            <h3 className="empty-title">No items in your shopping list</h3>
-            <p className="empty-description">
-              Add items to your cart and compare stores to create a shopping list
-            </p>
-          </Card>
+          <EmptyState
+            icon={ShoppingCart}
+            title="No items in your shopping list"
+            description="Add items to your cart and compare stores to create a shopping list"
+          />
         ) : (
           <div className="shopping-list">
-            {cart.map((item) => (
+            {cart.map((item, idx) => (
               <Card
                 key={item.id}
-                className={`shopping-item ${checkedItems[item.id] ? 'item-checked' : ''}`}
+                className={`shopping-item fyr-rise ${checkedItems[item.id] ? 'item-checked' : ''}`}
+                style={{ '--i': idx } as React.CSSProperties}
                 onClick={() => toggleItem(item.id)}
               >
                 <div className="item-content">
                   <div className="checkbox">
                     {checkedItems[item.id] && (
-                      <Check size={20} color={COLORS.PRIMARY} />
+                      <Check size={20} className="checkbox-check fyr-pop" />
                     )}
                   </div>
 
@@ -179,7 +177,7 @@ const ShoppingListScreen: React.FC = () => {
             loading={completing}
             variant="primary"
             size="large"
-            className="complete-button"
+            className="complete-button fyr-rise"
           >
             <CheckCircle size={24} />
             {completing ? 'Completing Shopping...' : 'Complete Shopping'}

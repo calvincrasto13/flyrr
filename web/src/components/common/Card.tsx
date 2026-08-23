@@ -10,6 +10,7 @@ const Card: React.FC<CardProps> = ({
   onClick,
   hoverable = false,
   className = '',
+  style,
 }) => {
   const classes = [
     'card',
@@ -19,7 +20,7 @@ const Card: React.FC<CardProps> = ({
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={classes} onClick={onClick}>
+    <div className={classes} style={style} onClick={onClick}>
       {image && (
         <div className="card-image-container">
           <img src={image} alt={title || ''} className="card-image" />
