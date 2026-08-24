@@ -24,6 +24,9 @@ import uuid
 from datetime import datetime
 import requests
 
+from categorizer import build_category_facets, categorize_items, is_ambiguous
+from deals import fetch_nearby_deals
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -169,6 +172,11 @@ async def search_items(request: SearchRequest):
 
         processed_items.sort(key=lambda x: x['current_price'])
 
+        # Classify for search disambiguation before grouping, so a group can
+        # inherit the category its members agree on.
+        categorize_items(processed_items)
+        category_facets = build_category_facets(processed_items)
+
         # Run improved grouping in thread pool (CPU-bound)
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
@@ -176,6 +184,22 @@ async def search_items(request: SearchRequest):
         )
         product_groups = result["groups"]
         claude_calls_used = result["claude_calls_used"]
+
+        # product_grouper has no notion of categories, so tag each group after
+        # the fact using the categories already assigned to its member items.
+        category_by_global_id = {
+            item["global_id"]: item["category"] for item in processed_items
+        }
+        for group in product_groups:
+            member_categories = [
+                category_by_global_id.get(store.get("global_id", ""), "other")
+                for store in group.get("stores", [])
+            ]
+            group["category"] = (
+                max(set(member_categories), key=member_categories.count)
+                if member_categories
+                else "other"
+            )
 
         cross_store_count = sum(1 for g in product_groups if g["store_count"] > 1)
 
@@ -190,10 +214,33 @@ async def search_items(request: SearchRequest):
             'items': processed_items,
             'product_groups': product_groups,
             'cross_store_count': cross_store_count,
+            'categories': category_facets,
+            'ambiguous': is_ambiguous(category_facets),
         }
 
     except Exception as e:
         logging.error(f"Error searching items: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/deals")
+async def get_nearby_deals(postal_code: str, limit: int = 24):
+    """
+    Return the best advertised flyer deals near a postal code.
+
+    Powers the home-screen feed. Unlike ``/search`` this skips the semantic
+    grouping pipeline entirely — it is a browse surface, not a comparison, so
+    the Claude/embedding cost isn't justified. Runs in the thread pool because
+    the underlying category fan-out is blocking I/O.
+    """
+    try:
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            _thread_pool, lambda: fetch_nearby_deals(postal_code, limit=limit)
+        )
+        return {"success": True, **result}
+    except Exception as e:
+        logging.error(f"Error fetching deals: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

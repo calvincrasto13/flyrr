@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { useLocation as useRouterLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Trophy,
@@ -18,6 +18,7 @@ import Badge from '../common/Badge';
 import QuantityStepper from '../common/QuantityStepper';
 import EmptyState from '../common/EmptyState';
 import ProductCard from '../common/ProductCard';
+import CategoryRefiner from '../common/CategoryRefiner';
 import Skeleton from '../common/Skeleton';
 import LoadingSpinner from '../common/LoadingSpinner';
 import './SearchResultsScreen.css';
@@ -100,10 +101,14 @@ const StoreRow: React.FC<StoreRowProps> = ({ store, isBest, onAdd, onUpdate, qua
 
 const SearchResultsScreen: React.FC = () => {
   const navigate = useNavigate();
+  const routerLocation = useRouterLocation();
   const {
     productGroups,
     crossStoreCount,
     searchResults,
+    searchCategories,
+    searchAmbiguous,
+    searchQuery,
     cart,
     addToCart,
     removeFromCart,
@@ -111,7 +116,36 @@ const SearchResultsScreen: React.FC = () => {
     isLoading,
   } = useApp();
 
+  // A category picked from the search dropdown arrives as route state and
+  // becomes the initial filter.
+  const routeCategory = (routerLocation.state as { category?: string } | null)?.category ?? null;
+
   const [viewMode, setViewMode] = useState<'groups' | 'flat'>('groups');
+  const [activeCategory, setActiveCategory] = useState<string | null>(routeCategory);
+
+  // A new search invalidates the previous filter — its categories may not
+  // even exist in the new result set.
+  const [categoriesOf, setCategoriesOf] = useState(searchQuery);
+  if (categoriesOf !== searchQuery) {
+    setCategoriesOf(searchQuery);
+    setActiveCategory(null);
+  }
+
+  const visibleGroups = useMemo(
+    () =>
+      activeCategory
+        ? productGroups.filter((g) => g.category === activeCategory)
+        : productGroups,
+    [productGroups, activeCategory]
+  );
+
+  const visibleItems = useMemo(
+    () =>
+      activeCategory
+        ? searchResults.filter((i) => i.category === activeCategory)
+        : searchResults,
+    [searchResults, activeCategory]
+  );
 
   const getCartQuantity = (globalId: string, merchant: string): number => {
     const item = cart.find(i => i.global_id === globalId && i.merchant === merchant);
@@ -201,11 +235,21 @@ const SearchResultsScreen: React.FC = () => {
           </Button>
         </div>
 
+        {/* Category refinement — the answer to ambiguous queries like "cream" */}
+        <CategoryRefiner
+          categories={searchCategories}
+          active={activeCategory}
+          onChange={setActiveCategory}
+          ambiguous={searchAmbiguous}
+          query={searchQuery}
+          totalCount={searchResults.length}
+        />
+
         {/* Summary bar */}
         {hasGroups && (
           <div className="results-summary">
             <span className="summary-text">
-              {productGroups.length} product{productGroups.length !== 1 ? 's' : ''} found
+              {visibleGroups.length} product{visibleGroups.length !== 1 ? 's' : ''} found
               {crossStoreCount > 0 && (
                 <> &mdash; <strong>{crossStoreCount}</strong> matched across stores</>
               )}
@@ -237,10 +281,21 @@ const SearchResultsScreen: React.FC = () => {
           />
         )}
 
+        {/* Filter matched nothing in the current view */}
+        {activeCategory &&
+          (viewMode === 'groups' ? visibleGroups.length === 0 : visibleItems.length === 0) && (
+            <EmptyState
+              icon={Search}
+              title="Nothing in this category"
+              description="No results here for that refinement. Pick another category, or show everything."
+              action={{ label: 'Show all results', onClick: () => setActiveCategory(null) }}
+            />
+          )}
+
         {/* Product Group Cards */}
         {hasGroups && viewMode === 'groups' && (
           <div className="results-list">
-            {productGroups.map((group: ProductGroup, idx: number) => {
+            {visibleGroups.map((group: ProductGroup, idx: number) => {
               const percentOff =
                 group.savings_vs_worst > 0 && group.worst_price > 0
                   ? Math.round((group.savings_vs_worst / group.worst_price) * 100)
@@ -305,7 +360,7 @@ const SearchResultsScreen: React.FC = () => {
         {/* Flat list */}
         {hasResults && (!hasGroups || viewMode === 'flat') && (
           <div className="results-grid">
-            {searchResults.map((item, idx) => (
+            {visibleItems.map((item, idx) => (
               <div
                 key={item.global_id || idx}
                 className="fyr-rise"

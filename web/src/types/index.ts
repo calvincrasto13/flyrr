@@ -11,6 +11,8 @@ export interface ShoppingItem {
   merchant_logo?: string;
   quantity?: number;
   unit_price?: number;
+  /** Classifier output, used to filter ambiguous searches. */
+  category?: string;
 }
 
 export interface CartItem extends ShoppingItem {
@@ -67,12 +69,52 @@ export interface ProductGroup {
   savings_vs_worst: number;
   match_method: MatchMethod;
   store_count: number;
+  /** Category its member items agreed on. */
+  category?: string;
+}
+
+/** One category present in a result set, with how many items fell into it. */
+export interface CategoryFacet {
+  key: string;
+  label: string;
+  count: number;
 }
 
 export interface SearchResponse {
   items: ShoppingItem[];
   product_groups: ProductGroup[];
   cross_store_count: number;
+  categories: CategoryFacet[];
+  /** True when results straddle 2+ categories, so a refinement prompt helps. */
+  ambiguous: boolean;
+}
+
+// ── Nearby deals (from /api/deals) ────────────────────────────────────────────
+
+export interface Deal {
+  id: string;
+  global_id: string;
+  name: string;
+  merchant: string;
+  merchant_id?: number;
+  merchant_logo?: string;
+  current_price: number;
+  /** Pre-sale price. Null when the flyer only advertises a sale story. */
+  original_price: number | null;
+  savings: number;
+  discount_percent: number;
+  sale_story: string;
+  image_url?: string;
+  /** ISO timestamp the flyer offer expires. */
+  valid_to?: string | null;
+  category: string;
+}
+
+export interface DealsResponse {
+  deals: Deal[];
+  total_found: number;
+  categories: string[];
+  merchants: string[];
 }
 
 // ── Price Alert types ──────────────────────────────────────────────────────────
@@ -142,6 +184,10 @@ export interface AppContextType {
   searchResults: ShoppingItem[];
   productGroups: ProductGroup[];
   crossStoreCount: number;
+  searchCategories: CategoryFacet[];
+  searchAmbiguous: boolean;
+  /** The query these results came from, shown in the refinement prompt. */
+  searchQuery: string;
   shoppingLists: ShoppingList[];
   savingsHistory: SavingsRecord[];
   comparison: StoreComparison | null;
@@ -155,7 +201,20 @@ export interface AppContextType {
   clearCart: () => void;
   setPostalCode: (postalCode: string) => void;
   setLocationInfo: (location: LocationInfo) => void;
-  setSearchResults: (results: ShoppingItem[], groups?: ProductGroup[], crossStoreCount?: number) => void;
+  /** False until persisted state has been read back from localStorage. Guards
+   * the first-run location modal against flashing on every page load. */
+  hydrated: boolean;
+  /** True once the user has completed location setup at least once. */
+  hasOnboardedLocation: boolean;
+  completeLocationOnboarding: () => void;
+  setSearchResults: (
+    results: ShoppingItem[],
+    groups?: ProductGroup[],
+    crossStoreCount?: number,
+    categories?: CategoryFacet[],
+    ambiguous?: boolean,
+    query?: string
+  ) => void;
   setComparison: (comparison: StoreComparison | null) => void;
   addShoppingList: (list: ShoppingList) => void;
   addSavingsRecord: (record: SavingsRecord) => void;

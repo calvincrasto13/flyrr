@@ -1,31 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, TrendingUp, Bell, Search } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Bell, RefreshCw, Tag } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
-import { useLocation } from '../../hooks/useLocation';
 import { useGroceryAPI } from '../../hooks/useGroceryAPI';
+import { useDeals } from '../../hooks/useDeals';
 import apiService from '../../services/api';
-import Card from '../common/Card';
-import Input from '../common/Input';
-import Button from '../common/Button';
-import PromoBanner from '../common/PromoBanner';
+import { Deal, ShoppingItem } from '../../types';
+import SearchBar from '../common/SearchBar';
+import DealCard from '../common/DealCard';
 import StatTile from '../common/StatTile';
-import LoadingSpinner from '../common/LoadingSpinner';
+import Skeleton from '../common/Skeleton';
+import EmptyState from '../common/EmptyState';
 import './HomeScreen.css';
+
+/** Deals and cart items are different shapes; the cart only needs these fields. */
+const dealToShoppingItem = (deal: Deal): ShoppingItem => ({
+  id: deal.id,
+  global_id: deal.global_id,
+  name: deal.name,
+  merchant: deal.merchant,
+  merchant_id: deal.merchant_id,
+  merchant_logo: deal.merchant_logo,
+  current_price: deal.current_price,
+  image_url: deal.image_url,
+});
 
 const HomeScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, postalCode, setPostalCode, setLocationInfo, savingsHistory, isLoading, error } = useApp();
-  const { getCurrentLocation } = useLocation();
+  const { cart, postalCode, savingsHistory, isLoading, error, addToCart } = useApp();
   const { searchItems } = useGroceryAPI();
+  const { deals, merchants, totalFound, isLoading: dealsLoading, error: dealsError, reload } =
+    useDeals(postalCode);
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [locationLoading, setLocationLoading] = useState(false);
   const [activeAlertsCount, setActiveAlertsCount] = useState<number | null>(null);
 
   const totalSavings = savingsHistory.reduce((sum, r) => sum + (r.savings || 0), 0);
 
-  // Lightweight fetch, mirrors the pattern PriceAlertsScreen already uses —
-  // kept as local state rather than global AppContext state to stay minimal.
   useEffect(() => {
     let cancelled = false;
     apiService
@@ -41,76 +52,32 @@ const HomeScreen: React.FC = () => {
     };
   }, []);
 
-  const handleGetCurrentLocation = async () => {
-    setLocationLoading(true);
+  const handleSearch = async (query: string, category?: string) => {
+    if (!query.trim() || !postalCode.trim()) return;
     try {
-      const location = await getCurrentLocation();
-      if (location) {
-        setPostalCode(location.postal_code);
-        setLocationInfo(location);
-      }
-    } catch (err) {
-      console.error('Error getting location:', err);
-    } finally {
-      setLocationLoading(false);
-    }
-  };
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim() || !postalCode.trim()) return;
-    try {
-      const response = await searchItems(searchQuery, postalCode);
+      const response = await searchItems(query, postalCode);
       if (response.product_groups.length > 0 || response.items.length > 0) {
-        navigate('/search');
+        // A category chosen from the dropdown arrives as route state and is
+        // applied as the initial filter on the results screen.
+        navigate('/search', category ? { state: { category } } : undefined);
       }
     } catch (err) {
       console.error('Search error:', err);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSearch();
-  };
-
   return (
     <div className="home-screen">
       <div className="home-container">
-        <PromoBanner
-          title="flyrr"
-          subtitle="Find the best grocery deals near you"
-          postalCode={postalCode}
-          onPostalCodeChange={setPostalCode}
-          onUseLocation={handleGetCurrentLocation}
-          locationLoading={locationLoading}
+        <SearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          onSubmit={handleSearch}
+          disabled={isLoading || !postalCode}
         />
 
         {error && <div className="error-message"><span>{error}</span></div>}
 
-        {/* Search Card */}
-        <Card className="search-card">
-          <h2 className="card-title">Search for Items</h2>
-          <Input
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="e.g., orange juice, milk, eggs"
-            label="What are you looking for?"
-            onKeyPress={handleKeyPress}
-            disabled={isLoading}
-          />
-          <Button
-            onClick={handleSearch}
-            disabled={isLoading || !searchQuery.trim() || !postalCode.trim()}
-            loading={isLoading}
-            variant="primary"
-            size="medium"
-            className="search-button"
-          >
-            <Search size={20} />
-            {isLoading ? 'Searching...' : 'Search'}
-          </Button>
-        </Card>
-
-        {/* Quick Stats */}
         <div className="quick-stats-row">
           <StatTile
             icon={ShoppingCart}
@@ -136,14 +103,79 @@ const HomeScreen: React.FC = () => {
           />
         </div>
 
-        {(isLoading || locationLoading) && (
-          <div className="loading-overlay">
-            <LoadingSpinner
-              size="large"
-              text={isLoading ? 'Searching for items...' : 'Getting your location...'}
+        {/* ── Nearby deals ─────────────────────────────────────────────── */}
+        <section className="deals-section">
+          <header className="deals-header">
+            <div>
+              <h2 className="deals-title">
+                <Tag size={18} />
+                Deals near you
+              </h2>
+              {!dealsLoading && deals.length > 0 && (
+                <p className="deals-subtitle">
+                  {totalFound} offers across {merchants.length} store
+                  {merchants.length === 1 ? '' : 's'}
+                </p>
+              )}
+            </div>
+            <button
+              className="deals-refresh"
+              onClick={reload}
+              disabled={dealsLoading}
+              aria-label="Refresh deals"
+              type="button"
+            >
+              <RefreshCw size={16} className={dealsLoading ? 'is-spinning' : undefined} />
+            </button>
+          </header>
+
+          {dealsLoading && (
+            <div className="deals-grid">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="deal-skeleton">
+                  <Skeleton height="120px" />
+                  <Skeleton height="14px" width="55%" />
+                  <Skeleton height="14px" width="90%" />
+                  <Skeleton height="18px" width="40%" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!dealsLoading && dealsError && (
+            <EmptyState
+              icon={Tag}
+              title="Couldn't load deals"
+              description={dealsError}
+              action={{ label: 'Try again', onClick: reload }}
             />
-          </div>
-        )}
+          )}
+
+          {!dealsLoading && !dealsError && deals.length === 0 && (
+            <EmptyState
+              icon={Tag}
+              title={postalCode ? 'No deals found nearby' : 'Set your location first'}
+              description={
+                postalCode
+                  ? "We couldn't find flyer deals for this postal code. Try a different location or search for a specific item."
+                  : 'Add a postal code and we’ll show the best flyer deals at stores near you.'
+              }
+            />
+          )}
+
+          {!dealsLoading && !dealsError && deals.length > 0 && (
+            <div className="deals-grid">
+              {deals.map((deal, index) => (
+                <DealCard
+                  key={`${deal.id}-${deal.merchant}-${index}`}
+                  deal={deal}
+                  index={index}
+                  onAdd={(d) => addToCart(dealToShoppingItem(d))}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

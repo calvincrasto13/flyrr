@@ -21,12 +21,6 @@
   text-align: center;
 }
 
-/* Search Card */
-.search-button {
-  width: 100%;
-  margin-top: var(--space-2);
-}
-
 /* Quick Stats */
 .quick-stats-row {
   display: grid;
@@ -48,6 +42,92 @@
   z-index: 50;
 }
 
+/* ── Nearby deals ─────────────────────────────────────────────────────────── */
+
+.deals-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.deals-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.deals-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+}
+
+.deals-title svg {
+  color: var(--color-primary);
+}
+
+.deals-subtitle {
+  margin: var(--space-1) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.deals-refresh {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out);
+}
+
+.deals-refresh:hover:not(:disabled) {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.deals-refresh:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.deals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.deal-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .is-spinning {
+    animation: fyr-spin 1s linear infinite;
+  }
+
+  @keyframes fyr-spin {
+    to { transform: rotate(360deg); }
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 480px) {
   .home-screen {
@@ -56,6 +136,11 @@
 
   .quick-stats-row {
     grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+  }
+
+  .deals-grid {
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--space-2);
   }
 }

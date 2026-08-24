@@ -8,6 +8,7 @@ import {
   LocationInfo,
   SavingsRecord,
   ProductGroup,
+  CategoryFacet,
 } from '../types';
 import { STORAGE_KEYS } from '../utils/constants';
 
@@ -20,11 +21,16 @@ interface AppState {
   searchResults: ShoppingItem[];
   productGroups: ProductGroup[];
   crossStoreCount: number;
+  searchCategories: CategoryFacet[];
+  searchAmbiguous: boolean;
+  searchQuery: string;
   shoppingLists: ShoppingList[];
   savingsHistory: SavingsRecord[];
   comparison: StoreComparison | null;
   isLoading: boolean;
   error: string | null;
+  hydrated: boolean;
+  hasOnboardedLocation: boolean;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────
@@ -35,14 +41,26 @@ type AppAction =
   | { type: 'SET_CART'; payload: CartItem[] }
   | { type: 'SET_POSTAL_CODE'; payload: string }
   | { type: 'SET_LOCATION_INFO'; payload: LocationInfo | null }
-  | { type: 'SET_SEARCH_RESULTS'; payload: { items: ShoppingItem[]; groups: ProductGroup[]; crossStoreCount: number } }
+  | {
+      type: 'SET_SEARCH_RESULTS';
+      payload: {
+        items: ShoppingItem[];
+        groups: ProductGroup[];
+        crossStoreCount: number;
+        categories: CategoryFacet[];
+        ambiguous: boolean;
+        query: string;
+      };
+    }
   | { type: 'SET_COMPARISON'; payload: StoreComparison | null }
   | { type: 'SET_SAVINGS_HISTORY'; payload: SavingsRecord[] }
   | { type: 'ADD_TO_CART'; payload: { item: ShoppingItem; quantity?: number } }
   | { type: 'REMOVE_FROM_CART'; payload: string }
   | { type: 'UPDATE_QUANTITY'; payload: { itemId: string; delta: number } }
   | { type: 'CLEAR_CART' }
-  | { type: 'ADD_SAVINGS_RECORD'; payload: SavingsRecord };
+  | { type: 'ADD_SAVINGS_RECORD'; payload: SavingsRecord }
+  | { type: 'HYDRATE'; payload: Partial<AppState> }
+  | { type: 'COMPLETE_LOCATION_ONBOARDING' };
 
 // ── Initial state ─────────────────────────────────────────────────────────────
 
@@ -53,11 +71,16 @@ const initialState: AppState = {
   searchResults: [],
   productGroups: [],
   crossStoreCount: 0,
+  searchCategories: [],
+  searchAmbiguous: false,
+  searchQuery: '',
   shoppingLists: [],
   savingsHistory: [],
   comparison: null,
   isLoading: false,
   error: null,
+  hydrated: false,
+  hasOnboardedLocation: false,
 };
 
 // ── Reducer ───────────────────────────────────────────────────────────────────
@@ -85,6 +108,9 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         searchResults: action.payload.items,
         productGroups: action.payload.groups,
         crossStoreCount: action.payload.crossStoreCount,
+        searchCategories: action.payload.categories,
+        searchAmbiguous: action.payload.ambiguous,
+        searchQuery: action.payload.query,
       };
 
     case 'SET_COMPARISON':
@@ -141,6 +167,12 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
     case 'ADD_SAVINGS_RECORD':
       return { ...state, savingsHistory: [action.payload, ...state.savingsHistory] };
 
+    case 'HYDRATE':
+      return { ...state, ...action.payload, hydrated: true };
+
+    case 'COMPLETE_LOCATION_ONBOARDING':
+      return { ...state, hasOnboardedLocation: true };
+
     default:
       return state;
   }
@@ -153,32 +185,44 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // Restore persisted data on mount
+  // Restore persisted data on mount. Dispatched as a single HYDRATE so the
+  // `hydrated` flag flips exactly once — components keying off it (the
+  // first-run location modal) must not act on the pre-restore empty state.
   useEffect(() => {
+    const restored: Partial<AppState> = {};
     try {
       const savedPostalCode = localStorage.getItem(STORAGE_KEYS.POSTAL_CODE);
       const savedCart = localStorage.getItem(STORAGE_KEYS.SHOPPING_CART);
       const savedLocation = localStorage.getItem(STORAGE_KEYS.LOCATION_INFO);
+      const onboarded = localStorage.getItem(STORAGE_KEYS.LOCATION_ONBOARDED);
 
-      if (savedPostalCode) dispatch({ type: 'SET_POSTAL_CODE', payload: savedPostalCode });
-      if (savedCart) dispatch({ type: 'SET_CART', payload: JSON.parse(savedCart) });
-      if (savedLocation) dispatch({ type: 'SET_LOCATION_INFO', payload: JSON.parse(savedLocation) });
+      if (savedPostalCode) restored.postalCode = savedPostalCode;
+      if (savedCart) restored.cart = JSON.parse(savedCart);
+      if (savedLocation) restored.locationInfo = JSON.parse(savedLocation);
+      // A postal code persisted by an older build counts as onboarded, so
+      // existing users don't get the modal again on upgrade.
+      restored.hasOnboardedLocation = onboarded === 'true' || !!savedPostalCode;
     } catch (error) {
       console.error('Error loading saved data:', error);
     }
+    dispatch({ type: 'HYDRATE', payload: restored });
   }, []);
 
-  // Persist cart
+  // Persist cart — also gated on hydration so the empty initial cart can't
+  // overwrite a stored one before it has been read back.
   useEffect(() => {
+    if (!state.hydrated) return;
     try {
       localStorage.setItem(STORAGE_KEYS.SHOPPING_CART, JSON.stringify(state.cart));
     } catch (error) {
       console.error('Error saving cart:', error);
     }
-  }, [state.cart]);
+  }, [state.cart, state.hydrated]);
 
-  // Persist postal code
+  // Persist postal code. Skipped until hydration completes, otherwise the
+  // initial empty string would race ahead and clobber the stored value.
   useEffect(() => {
+    if (!state.hydrated) return;
     try {
       if (state.postalCode) {
         localStorage.setItem(STORAGE_KEYS.POSTAL_CODE, state.postalCode);
@@ -186,7 +230,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (error) {
       console.error('Error saving postal code:', error);
     }
-  }, [state.postalCode]);
+  }, [state.postalCode, state.hydrated]);
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
@@ -214,8 +258,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const setSearchResults = (
     items: ShoppingItem[],
     groups: ProductGroup[] = [],
-    crossStoreCount: number = 0
-  ) => dispatch({ type: 'SET_SEARCH_RESULTS', payload: { items, groups, crossStoreCount } });
+    crossStoreCount: number = 0,
+    categories: CategoryFacet[] = [],
+    ambiguous: boolean = false,
+    query: string = ''
+  ) =>
+    dispatch({
+      type: 'SET_SEARCH_RESULTS',
+      payload: { items, groups, crossStoreCount, categories, ambiguous, query },
+    });
 
   const setComparison = (comparison: StoreComparison | null) =>
     dispatch({ type: 'SET_COMPARISON', payload: comparison });
@@ -230,6 +281,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const setSavingsHistory = (records: SavingsRecord[]) =>
     dispatch({ type: 'SET_SAVINGS_HISTORY', payload: records });
 
+  const completeLocationOnboarding = () => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.LOCATION_ONBOARDED, 'true');
+    } catch {
+      // Non-fatal: onboarding just re-prompts next visit.
+    }
+    dispatch({ type: 'COMPLETE_LOCATION_ONBOARDING' });
+  };
+
   const clearError = () => dispatch({ type: 'SET_ERROR', payload: null });
 
   const setLoading = (loading: boolean) =>
@@ -243,6 +303,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     clearCart,
     setPostalCode,
     setLocationInfo,
+    completeLocationOnboarding,
     setSearchResults,
     setComparison,
     addShoppingList,

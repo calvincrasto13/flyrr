@@ -1,0 +1,165 @@
+.search-bar {
+  position: relative;
+  width: 100%;
+}
+
+.search-bar-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.search-bar-field:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.search-bar-icon {
+  flex-shrink: 0;
+  color: var(--color-text-subtle);
+}
+
+.search-bar-field:focus-within .search-bar-icon {
+  color: var(--color-primary);
+}
+
+.search-bar-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.search-bar-input::placeholder {
+  color: var(--color-text-subtle);
+}
+
+.search-bar-clear {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  color: var(--color-text-subtle);
+  background: var(--color-bg);
+  border: none;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.search-bar-clear:hover {
+  color: var(--color-text);
+}
+
+/* ── Suggestion dropdown ─────────────────────────────────────────────────── */
+
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  right: 0;
+  z-index: 60;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--space-2);
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-float);
+  animation: fyr-suggestions-in var(--duration-fast) var(--ease-out);
+}
+
+@keyframes fyr-suggestions-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.search-suggestions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-subtle);
+}
+
+.search-suggestions-header button {
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.search-suggestion {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  font-size: var(--fs-sm);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.search-suggestion svg {
+  flex-shrink: 0;
+  color: var(--color-text-subtle);
+}
+
+.search-suggestion.is-active {
+  background: var(--color-primary-light);
+}
+
+/* Disambiguation rows: "cream → Dairy & Eggs" */
+.search-suggestion-category {
+  margin-left: auto;
+  padding: 2px var(--space-2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-pill);
+}
+
+.search-suggestion.is-active .search-suggestion-category {
+  color: var(--color-white);
+  background: var(--color-primary);
+}
+
+.search-suggestion-hint {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  color: var(--color-text-subtle);
+}
+
+.search-suggestion.is-active svg {
+  color: var(--color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-suggestions { animation: none; }
+}
