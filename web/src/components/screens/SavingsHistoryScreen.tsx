@@ -7,6 +7,9 @@ import { COLORS } from '../../utils/constants';
 import { SavingsRecord } from '../../types';
 import Button from '../common/Button';
 import Card from '../common/Card';
+import Badge from '../common/Badge';
+import StatTile from '../common/StatTile';
+import EmptyState from '../common/EmptyState';
 import LoadingSpinner from '../common/LoadingSpinner';
 import './SavingsHistoryScreen.css';
 
@@ -38,6 +41,11 @@ const SavingsHistoryScreen: React.FC = () => {
   };
 
   const totalSavings = savingsHistory.reduce((sum, record) => sum + (record.savings || 0), 0);
+  const totalItems = savingsHistory.reduce((sum, record) => sum + (record.items_count || 0), 0);
+  const avgTripCost =
+    savingsHistory.length > 0
+      ? savingsHistory.reduce((sum, record) => sum + record.total_cost, 0) / savingsHistory.length
+      : 0;
 
   const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -78,11 +86,11 @@ const SavingsHistoryScreen: React.FC = () => {
           <div className="spacer" />
         </div>
 
-        {/* Total Savings Summary */}
+        {/* Total Savings Summary — the screen's hero */}
         <Card className="total-savings-card">
           <div className="total-savings-content">
             <div className="savings-icon">
-              <TrendingUp size={48} color={COLORS.PRIMARY} />
+              <TrendingUp size={44} color="#ffffff" />
             </div>
             <div className="savings-info">
               <h2 className="total-savings-label">Total Savings</h2>
@@ -94,36 +102,27 @@ const SavingsHistoryScreen: React.FC = () => {
 
         {/* Savings History */}
         {savingsHistory.length === 0 ? (
-          <Card className="empty-savings">
-            <div className="empty-icon">
-              <Receipt size={64} color={COLORS.LIGHT_GRAY} />
-            </div>
-            <h3 className="empty-title">No shopping trips yet</h3>
-            <p className="empty-description">
-              Start shopping and saving to see your history here
-            </p>
-            <Button
-              onClick={handleGoBack}
-              variant="primary"
-              size="medium"
-              className="start-shopping-button"
-            >
-              Start Shopping
-            </Button>
-          </Card>
+          <EmptyState
+            icon={Receipt}
+            title="No shopping trips yet"
+            description="Start shopping and saving to see your history here"
+            action={{ label: 'Start Shopping', onClick: handleGoBack }}
+          />
         ) : (
           <div className="savings-list">
             <h2 className="list-title">Your Shopping History</h2>
             {savingsHistory.map((record: SavingsRecord, index: number) => (
-              <Card key={`${record.id}-${index}`} className="savings-record">
+              <Card
+                key={`${record.id}-${index}`}
+                className="savings-record fyr-rise"
+                style={{ '--i': index } as React.CSSProperties}
+              >
                 <div className="record-header">
                   <div className="record-date">
                     <Calendar size={16} color={COLORS.GRAY} />
                     <span>{formatDate(record.completed_at)}</span>
                   </div>
-                  <div className="record-savings">
-                    <span className="savings-amount">+{formatPrice(record.savings)}</span>
-                  </div>
+                  <Badge variant="success">+{formatPrice(record.savings)}</Badge>
                 </div>
 
                 <div className="record-details">
@@ -146,13 +145,11 @@ const SavingsHistoryScreen: React.FC = () => {
                       {Object.entries(record.potential_costs).map(([store, price]) => (
                         <div
                           key={store}
-                          className={`store-price ${store === record.best_store ? 'best-price' : ''}`}
+                          className={`store-price-row ${store === record.best_store ? 'best-price' : ''}`}
                         >
-                          <span className="store-name">{store}</span>
-                          <span className="price">{formatPrice(price as number)}</span>
-                          {store === record.best_store && (
-                            <span className="best-badge">Best</span>
-                          )}
+                          <span className="store-price-name">{store}</span>
+                          <span className="store-price-value">{formatPrice(price as number)}</span>
+                          {store === record.best_store && <Badge variant="success">Best</Badge>}
                         </div>
                       ))}
                     </div>
@@ -165,31 +162,19 @@ const SavingsHistoryScreen: React.FC = () => {
 
         {/* Stats Summary */}
         {savingsHistory.length > 0 && (
-          <Card className="stats-summary">
+          <div className="stats-summary">
             <h3 className="stats-title">Shopping Statistics</h3>
             <div className="stats-grid">
-              <div className="stat-item">
-                <span className="stat-label">Average Savings</span>
-                <span className="stat-value">
-                  {formatPrice(totalSavings / savingsHistory.length)}
-                </span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Average Trip Cost</span>
-                <span className="stat-value">
-                  {formatPrice(
-                    savingsHistory.reduce((sum, record) => sum + record.total_cost, 0) / savingsHistory.length
-                  )}
-                </span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Total Items Purchased</span>
-                <span className="stat-value">
-                  {savingsHistory.reduce((sum, record) => sum + (record.items_count || 0), 0)}
-                </span>
-              </div>
+              <StatTile
+                icon={TrendingUp}
+                label="Average Savings"
+                value={formatPrice(totalSavings / savingsHistory.length)}
+                tone="mint"
+              />
+              <StatTile icon={Store} label="Average Trip Cost" value={formatPrice(avgTripCost)} tone="blush" />
+              <StatTile icon={Receipt} label="Total Items Purchased" value={totalItems} tone="warning" />
             </div>
-          </Card>
+          </div>
         )}
 
         {/* Loading Overlay */}

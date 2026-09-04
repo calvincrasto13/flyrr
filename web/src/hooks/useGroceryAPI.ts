@@ -23,7 +23,13 @@ export const useGroceryAPI = (): UseGroceryAPIReturn => {
     async (query: string, postalCode: string): Promise<SearchResponse> => {
       if (!query.trim() || !postalCode.trim()) {
         setError('Please enter both a search term and a postal code');
-        return { items: [], product_groups: [], cross_store_count: 0 };
+        return {
+          items: [],
+          product_groups: [],
+          cross_store_count: 0,
+          categories: [],
+          ambiguous: false,
+        };
       }
 
       setIsLoading(true);
@@ -36,12 +42,25 @@ export const useGroceryAPI = (): UseGroceryAPIReturn => {
         });
 
         // Store both flat items and grouped results in context
-        setSearchResults(response.items, response.product_groups, response.cross_store_count);
+        setSearchResults(
+          response.items,
+          response.product_groups,
+          response.cross_store_count,
+          response.categories,
+          response.ambiguous,
+          query.trim()
+        );
         return response;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to search items';
         setError(errorMessage);
-        return { items: [], product_groups: [], cross_store_count: 0 };
+        return {
+          items: [],
+          product_groups: [],
+          cross_store_count: 0,
+          categories: [],
+          ambiguous: false,
+        };
       } finally {
         setIsLoading(false);
       }

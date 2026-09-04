@@ -10,6 +10,7 @@ import {
   PriceAlert,
   PriceAlertCreate,
   PriceAlertUpdate,
+  DealsResponse,
 } from '../types';
 
 class APIService {
@@ -47,9 +48,28 @@ class APIService {
         items: response.data.items || [],
         product_groups: response.data.product_groups || [],
         cross_store_count: response.data.cross_store_count || 0,
+        categories: response.data.categories || [],
+        ambiguous: !!response.data.ambiguous,
       };
     }
     throw new Error(response.data.error || 'Failed to search items');
+  }
+
+  // ── Nearby Deals ──────────────────────────────────────────────────────────
+
+  async getDeals(postalCode: string, limit = 24): Promise<DealsResponse> {
+    const response = await this.client.get<any>('/deals', {
+      params: { postal_code: postalCode, limit },
+    });
+    if (response.data.success) {
+      return {
+        deals: response.data.deals || [],
+        total_found: response.data.total_found || 0,
+        categories: response.data.categories || [],
+        merchants: response.data.merchants || [],
+      };
+    }
+    throw new Error(response.data.error || 'Failed to load deals');
   }
 
   // ── Shopping List ─────────────────────────────────────────────────────────

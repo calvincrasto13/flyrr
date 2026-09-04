@@ -1,33 +1,10 @@
-/* CSS Variables */
-:root {
-  --color-primary: #4CAF50;
-  --color-secondary: #FF9800;
-  --color-danger: #f44336;
-  --color-success: #4CAF50;
-  --color-warning: #FF9800;
-  --color-info: #2196F3;
-  --color-light: #f5f5f5;
-  --color-white: #ffffff;
-  --color-black: #333333;
-  --color-gray: #666666;
-  --color-light-gray: #999999;
-  --color-border: #e0e0e0;
-}
-
-/* Global Styles */
-* {
-  box-sizing: border-box;
-}
+/* Color, spacing, radius, shadow, type and motion tokens live in
+   styles/tokens.css — this file only holds global layout + utility rules. */
 
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: var(--color-light);
-  color: var(--color-black);
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
 #root {

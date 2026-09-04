@@ -1,26 +1,25 @@
 .savings-history-screen {
-  min-height: 100vh;
-  background-color: var(--color-light);
+  min-height: 100%;
 }
 
 .savings-container {
   max-width: 600px;
   margin: 0 auto;
-  padding: 20px;
+  padding: var(--space-5);
 }
 
 /* Header */
 .savings-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
 .savings-title {
-  font-size: 24px;
-  font-weight: bold;
-  color: var(--color-black);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
   margin: 0;
   flex: 1;
 }
@@ -29,26 +28,26 @@
   width: 40px;
 }
 
-/* Total Savings Card */
+/* Total Savings Card — hero */
 .total-savings-card {
-  background: linear-gradient(135deg, var(--color-primary), #45a049);
-  color: white;
-  margin-bottom: 24px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: var(--color-white);
+  margin-bottom: var(--space-6);
   text-align: center;
-  padding: 32px 24px;
+  padding: var(--space-8) var(--space-6);
 }
 
 .total-savings-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .savings-icon {
   background: rgba(255, 255, 255, 0.2);
-  width: 80px;
-  height: 80px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -60,66 +59,37 @@
 }
 
 .total-savings-label {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
+  margin: 0 0 var(--space-2) 0;
   opacity: 0.9;
 }
 
 .total-savings-amount {
-  font-size: 36px;
-  font-weight: bold;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   margin: 0 0 4px 0;
 }
 
 .trips-count {
-  font-size: 14px;
+  font-size: var(--fs-sm);
   margin: 0;
-  opacity: 0.8;
-}
-
-/* Empty Savings */
-.empty-savings {
-  text-align: center;
-  padding: 60px 20px;
-  margin-bottom: 24px;
-}
-
-.empty-icon {
-  margin-bottom: 16px;
-}
-
-.empty-title {
-  font-size: 24px;
-  font-weight: bold;
-  color: var(--color-black);
-  margin: 0 0 8px 0;
-}
-
-.empty-description {
-  font-size: 16px;
-  color: var(--color-gray);
-  margin: 0 0 24px 0;
-  line-height: 1.4;
-}
-
-.start-shopping-button {
-  margin-top: 16px;
+  opacity: 0.85;
 }
 
 /* Savings List */
 .savings-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
 .list-title {
-  font-size: 20px;
-  font-weight: bold;
-  color: var(--color-black);
-  margin: 0 0 16px 0;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2) 0;
 }
 
 /* Savings Record */
@@ -131,41 +101,31 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .record-date {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
-  color: var(--color-gray);
-}
-
-.record-savings {
-  text-align: right;
-}
-
-.savings-amount {
-  font-size: 18px;
-  font-weight: bold;
-  color: var(--color-primary);
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
 }
 
 .record-details {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .record-store {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-black);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
 }
 
 .record-stats {
@@ -176,26 +136,26 @@
 }
 
 .record-total {
-  font-size: 14px;
-  color: var(--color-gray);
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
 }
 
 .record-items {
-  font-size: 12px;
-  color: var(--color-light-gray);
+  font-size: var(--fs-xs);
+  color: var(--color-text-subtle);
 }
 
 /* Price Comparison */
 .price-comparison {
   border-top: 1px solid var(--color-border);
-  padding-top: 12px;
+  padding-top: var(--space-3);
 }
 
 .comparison-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-gray);
-  margin: 0 0 8px 0;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-2) 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -203,85 +163,52 @@
 .store-prices {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
-.store-price {
+.store-price-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 8px;
-  border-radius: 4px;
-  background-color: var(--color-light);
+  gap: var(--space-2);
+  padding: 6px var(--space-2);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg);
 }
 
-.store-price.best-price {
-  background-color: #e8f5e9;
-  border: 1px solid var(--color-primary);
+.store-price-row.best-price {
+  background-color: var(--color-mint-50);
+  border: 1px solid var(--color-mint-300);
 }
 
-.store-name {
-  font-size: 12px;
-  color: var(--color-black);
+.store-price-name {
+  flex: 1;
+  font-size: var(--fs-xs);
+  color: var(--color-text);
 }
 
-.price {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-black);
-}
-
-.best-badge {
-  font-size: 10px;
-  font-weight: bold;
-  color: var(--color-primary);
-  background-color: #e8f5e9;
-  padding: 2px 6px;
-  border-radius: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.store-price-value {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
 }
 
 /* Stats Summary */
 .stats-summary {
-  background: white;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
 }
 
 .stats-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: var(--color-black);
-  margin: 0 0 16px 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-4) 0;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
-
-.stat-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.stat-item:last-child {
-  border-bottom: none;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: var(--color-gray);
-}
-
-.stat-value {
-  font-size: 16px;
-  font-weight: bold;
-  color: var(--color-black);
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
 }
 
 /* Loading Overlay */
@@ -291,25 +218,25 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 50;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
   .savings-container {
-    padding: 16px;
+    padding: var(--space-4);
   }
 
   .savings-title {
-    font-size: 20px;
+    font-size: var(--fs-lg);
   }
 
   .total-savings-card {
-    padding: 24px 16px;
+    padding: var(--space-6) var(--space-4);
   }
 
   .savings-icon {
@@ -317,43 +244,26 @@
     height: 60px;
   }
 
-  .savings-icon svg {
-    width: 32px;
-    height: 32px;
-  }
-
   .total-savings-amount {
-    font-size: 28px;
-  }
-
-  .savings-amount {
-    font-size: 16px;
+    font-size: var(--fs-xl);
   }
 
   .record-store {
-    font-size: 14px;
-  }
-
-  .stats-grid {
-    gap: 12px;
-  }
-
-  .stat-value {
-    font-size: 14px;
+    font-size: var(--fs-sm);
   }
 }
 
 @media (max-width: 480px) {
   .savings-container {
-    padding: 12px;
+    padding: var(--space-3);
   }
 
   .savings-header {
-    margin-bottom: 16px;
+    margin-bottom: var(--space-4);
   }
 
   .total-savings-card {
-    padding: 20px 12px;
+    padding: var(--space-5) var(--space-3);
   }
 
   .savings-icon {
@@ -361,40 +271,32 @@
     height: 50px;
   }
 
-  .savings-icon svg {
-    width: 24px;
-    height: 24px;
-  }
-
   .total-savings-amount {
-    font-size: 24px;
+    font-size: var(--fs-lg);
   }
 
   .total-savings-label {
-    font-size: 16px;
-  }
-
-  .savings-record {
-    padding: 12px;
+    font-size: var(--fs-base);
   }
 
   .record-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: var(--space-2);
   }
 
   .record-details {
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: var(--space-1);
   }
 
   .record-stats {
     align-items: flex-start;
   }
 
-  .store-price {
-    padding: 4px 6px;
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
   }
 }
